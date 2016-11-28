@@ -15,8 +15,6 @@ SECTIONS
         . = 1M;
         .text : ALIGN(0x1000) {
               *(.text*)
-        }
-        .ctors : {
                ctors_begin = .;
               *(.ctors*)
               ctors_end = .;

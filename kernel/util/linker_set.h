@@ -1,7 +1,8 @@
 #ifndef LINKER_SET_H
 #define LINKER_SET_H
 #include <stddef.h>
-#include "compiler.h"
+
+#define CONCAT(x, y) x ## y
 
 #define LINKER_SET_(set) linker_set_##set
 #define SET_PREFIX(set) linker_set_##set

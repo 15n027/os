@@ -1,7 +1,6 @@
-[bits 32]
-
-global _start
-extern main
+.globl _start
+.extern main
 _start:
-        mov esp, 0x200000
+        mov $0x200000, %esp
         call main
+        int3

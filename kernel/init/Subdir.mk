@@ -1,0 +1,1 @@
+SRCS += init/multiboot.c
