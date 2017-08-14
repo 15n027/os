@@ -1,109 +1,27 @@
+TOPDIR ?= ../../
+include $(TOPDIR)/build/defs.mk
+
 INSTALL=install
-prefix?=/opt/diet
-# Set the following to install to a different root
-#DESTDIR=/tmp/fefix
-# Use "make DEBUG=1" to compile a debug version.
 
-LIBDIR=${prefix}/lib
-BINDIR=${prefix}/bin
-MAN1DIR=${prefix}/man/man1
-
-MYARCH:=$(shell uname -m | sed -e 's/i[4-9]86/i386/' -e 's/armv[3-6]t\?e\?[lb]/arm/')
-
-# This extra-ugly cruft is here so make will not run uname and sed each
-# time it looks at $(OBJDIR).  This alone sped up running make when
-# nothing has to be done from 1 sec to 0.12 sec on a 900 MHz Athlon.
-# We don't use ARCH:=$(MYARCH) so we can detect unknown architectures.
-ifeq ($(MYARCH),i386)
-ARCH=i386
-else
-ifeq ($(MYARCH),mips)
-ARCH=mips
-else
-ifeq ($(MYARCH),alpha)
-ARCH=alpha
-else
-ifeq ($(MYARCH),ppc)
-ARCH=ppc
-else
-ifeq ($(MYARCH),ppc64)
-ARCH=ppc64
-else
-ifeq ($(MYARCH),arm)
-ARCH=arm
-else
-ifeq ($(MYARCH),sparc)
-ARCH=sparc
-else
-ifeq ($(MYARCH),sparc64)
-ARCH=sparc64
-else
-ifeq ($(MYARCH),s390)
-ARCH=s390
-else
-ifeq ($(MYARCH),s390x)
-ARCH=s390x
-else
-ifeq ($(MYARCH),mipsel)
-ARCH=mipsel
-else
-ifeq ($(MYARCH),parisc)
-ARCH=parisc
-else
-ifeq ($(MYARCH),parisc64)
-ARCH=parisc
-MYARCH=parisc
-else
-ifeq ($(MYARCH),x86_64)
-ARCH=x86_64
-else
-ifeq ($(MYARCH),ia64)
-ARCH=ia64
-else
-ifeq ($(MYARCH),armeb)
-ARCH=arm
-else
-$(error unknown architecture, please fix Makefile)
-endif
-endif
-endif
-endif
-endif
-endif
-endif
-endif
-endif
-endif
-endif
-endif
-endif
-endif
-endif
+MYARCH := x86_64
+ifeq ($(ARCH), i686)
+	ARCH := i386
 endif
 
-# ARCH=$(MYARCH)
-
-OBJDIR=bin-$(ARCH)
-ILIBDIR=$(LIBDIR)-$(ARCH)
+OBJDIR := $(OBJDIR)/libc
+HEADERDIR := $(OBJDIR)
 
 HOME=$(shell pwd)
 
-WHAT=	$(OBJDIR) $(OBJDIR)/start.o $(OBJDIR)/dyn_start.o $(OBJDIR)/dyn_stop.o \
+WHAT=	$(OBJDIR) $(OBJDIR)/start.o \
 	$(OBJDIR)/dietlibc.a $(OBJDIR)/liblatin1.a \
-	$(OBJDIR)/libcompat.a $(OBJDIR)/libm.a \
-	$(OBJDIR)/librpc.a $(OBJDIR)/libpthread.a \
-	$(OBJDIR)/libcrypt.a \
-	$(OBJDIR)/diet $(OBJDIR)/diet-i $(OBJDIR)/elftrunc \
-	$(OBJDIR)/dnsd
+	$(OBJDIR)/libcompat.a \
+	$(OBJDIR)/libcrypt.a
 
-all: $(WHAT)
+all: $(WHAT) install-headers
 
 profiling: $(OBJDIR)/libgmon.a $(OBJDIR)/pstart.o
 
-CFLAGS=-pipe -nostdinc
-CROSS=
-
-CC=gcc
 INC=-I. -isystem include
 
 VPATH=lib:libstdio:libugly:libcruft:libcrypt:libshell:liblatin1:libcompat:libdl:librpc:libregex:libm:profiling
@@ -119,12 +37,7 @@ LIBSHELLOBJ=$(patsubst libshell/%.c,$(OBJDIR)/%.o,$(wildcard libshell/*.c))
 LIBCOMPATOBJ=$(patsubst libcompat/%.c,$(OBJDIR)/%.o,$(wildcard libcompat/*.c)) $(OBJDIR)/syscall.o
 LIBMATH=$(patsubst libm/%.c,%.o,$(wildcard libm/*.c))
 
-LIBRPCOBJ=$(patsubst librpc/%.c,$(OBJDIR)/%.o,$(wildcard librpc/*.c))
 LIBREGEXOBJ=$(patsubst libregex/%.c,$(OBJDIR)/%.o,$(wildcard libregex/*.c))
-
-LIBDLOBJ=$(patsubst libdl/%.c,$(OBJDIR)/%.o,$(wildcard libdl/*.c)) $(OBJDIR)/_dl_jump.o
-
-LIBPTHREAD_OBJS=$(patsubst libpthread/%.c,$(OBJDIR)/%.o,$(shell ./threadsafe.sh)) $(OBJDIR)/__testandset.o
 
 LIBGMON_OBJS=$(OBJDIR)/__mcount.o $(OBJDIR)/monitor.o $(OBJDIR)/profil.o
 
@@ -132,61 +45,28 @@ include $(ARCH)/Makefile.add
 
 LIBMATHOBJ=$(patsubst %,$(OBJDIR)/%,$(LIBMATH))
 
-ifeq ($(CFLAGS),-pipe -nostdinc)
-CFLAGS+=-O -fomit-frame-pointer
-endif
-
-ifneq ($(DEBUG),)
-CFLAGS = -g
-COMMENT = :
-endif
-CFLAGS += -W -Wall -Wextra -Wchar-subscripts -Wmissing-prototypes -Wmissing-declarations -Wno-switch -Wno-unused -Wredundant-decls
-
 PWD=$(shell pwd)
 
 .SUFFIXES:
 .SUFFIXES: .S .c
 
-# added real dynamic dietlibc.so
-PICODIR = pic-$(ARCH)
 
-$(OBJDIR) $(PICODIR):
-	mkdir $@
+$(OBJDIR):
+	mkdir -p $@
 
 % :: %,v
 
 $(OBJDIR)/%: $(OBJDIR)
 
-ifeq ($(CC),tcc)
-$(OBJDIR)/%.o: %.S $(ARCH)/syscalls.h
-	$(CROSS)cpp $(INC) $< | $(CROSS)as -o $@
-
-$(OBJDIR)/%.o: %.c
-	tcc -I. -Iinclude -c $< -o $@
-	$(COMMENT) -$(CROSS)strip -x -R .comment -R .note $@
-else
 $(OBJDIR)/pstart.o: start.S
 	$(CROSS)$(CC) $(INC) $(CFLAGS) -DPROFILING -c $< -o $@
 
 $(OBJDIR)/%.o: %.S $(ARCH)/syscalls.h
 	$(CROSS)$(CC) $(INC) $(CFLAGS) -c $< -o $@
 
-$(OBJDIR)/pthread_%.o: libpthread/pthread_%.c
-	$(CROSS)$(CC) $(INC) $(CFLAGS) -c $< -o $@
-	$(COMMENT) -$(CROSS)strip -x -R .comment -R .note $@
-
 $(OBJDIR)/%.o: %.c
 	$(CROSS)$(CC) $(INC) $(CFLAGS) -c $< -o $@ -D__dietlibc__
-	$(COMMENT) -$(CROSS)strip -x -R .comment -R .note $@
-endif
 
-ifeq ($(shell $(CC) -v 2>&1 | grep "gcc version"),gcc version 4.0.0)
-SAFE_CFLAGS=$(shell echo $(CFLAGS)|sed 's/-Os/-O2/')
-SAFER_CFLAGS=$(shell echo $(CFLAGS)|sed 's/-Os/-O/')
-else
-SAFE_CFLAGS=$(CFLAGS)
-SAFER_CFLAGS=$(CFLAGS)
-endif
 
 CC+=-D__dietlibc__
 
@@ -194,16 +74,12 @@ $(OBJDIR)/crypt.o: libcrypt/crypt.c
 	$(CROSS)$(CC) $(INC) $(SAFER_CFLAGS) -c $< -o $@
 
 DIETLIBC_OBJ = $(OBJDIR)/unified.o \
-$(SYSCALLOBJ) $(LIBOBJ) $(LIBSTDIOOBJ) $(LIBUGLYOBJ) \
-$(LIBCRUFTOBJ) $(LIBCRYPTOBJ) $(LIBSHELLOBJ) $(LIBREGEXOBJ) \
-$(OBJDIR)/__longjmp.o $(OBJDIR)/setjmp.o \
-$(OBJDIR)/clone.o
+$(LIBOBJ) $(LIBSTDIOOBJ) \
+$(OBJDIR)/__longjmp.o $(OBJDIR)/setjmp.o
 
 $(OBJDIR)/dietlibc.a: $(DIETLIBC_OBJ) $(OBJDIR)/start.o
 	$(CROSS)ar cru $@ $(DIETLIBC_OBJ)
 
-$(OBJDIR)/librpc.a: $(LIBRPCOBJ)
-	$(CROSS)ar cru $@ $(LIBRPCOBJ)
 
 $(OBJDIR)/libcrypt.a:
 	touch dummy.c
@@ -220,9 +96,6 @@ $(OBJDIR)/liblatin1.a: $(LIBLATIN1_OBJS)
 $(OBJDIR)/libgmon.a: $(LIBGMON_OBJS)
 	$(CROSS)ar cru $@ $^
 
-$(OBJDIR)/libpthread.a: $(LIBPTHREAD_OBJS) dietfeatures.h
-	$(CROSS)ar cru $@ $(LIBPTHREAD_OBJS)
-
 $(OBJDIR)/libcompat.a: $(LIBCOMPATOBJ)
 	$(CROSS)ar cru $@ $(LIBCOMPATOBJ)
 
@@ -231,108 +104,13 @@ $(OBJDIR)/libm.a: $(LIBMATHOBJ)
 
 LD_UNSET = env -u LD_RUN_PATH
 
-dyn: dyn_lib
-
-# added dynamic linker
-$(OBJDIR)/libdl.a: $(LIBDLOBJ)
-	$(CROSS)ar cru $@ $(LIBDLOBJ)
-
-dyn_lib: $(PICODIR) $(PICODIR)/libc.so $(PICODIR)/dstart.o \
-	$(PICODIR)/dyn_so_start.o $(PICODIR)/dyn_start.o $(PICODIR)/dyn_stop.o \
-	$(PICODIR)/libpthread.so $(PICODIR)/libdl.so $(PICODIR)/libcompat.so \
-	$(PICODIR)/libm.so $(PICODIR)/diet-dyn $(PICODIR)/diet-dyn-i
-
-$(PICODIR)/%.o: %.S $(ARCH)/syscalls.h
-	$(CROSS)$(CC) $(INC) $(CFLAGS) -fPIC -D__DYN_LIB -c $< -o $@
-
-$(PICODIR)/pthread_%.o: libpthread/pthread_%.c
-	$(CROSS)$(CC) $(INC) $(CFLAGS) -fPIC -D__DYN_LIB -c $< -o $@
-	$(COMMENT) $(CROSS)strip -x -R .comment -R .note $@
-
-$(PICODIR)/%.o: %.c
-	$(CROSS)$(CC) $(INC) $(CFLAGS) -fPIC -D__DYN_LIB -c $< -o $@
-	$(COMMENT) $(CROSS)strip -x -R .comment -R .note $@
-
-$(PICODIR)/dstart.o: start.S
-	$(CROSS)$(CC) $(INC) $(CFLAGS) -fPIC -D__DYN_LIB -c $< -o $@
-
-$(PICODIR)/dyn_so_start.o: dyn_start.c
-	$(CROSS)$(CC) $(INC) $(CFLAGS) -fPIC -D__DYN_LIB -D__DYN_LIB_SHARED -c $< -o $@
-	$(COMMENT) $(CROSS)strip -x -R .comment -R .note $@
-
-DYN_LIBC_PIC = $(LIBOBJ) $(LIBSTDIOOBJ) $(LIBUGLYOBJ) \
-$(LIBCRUFTOBJ) $(LIBCRYPTOBJ) $(LIBSHELLOBJ) $(LIBREGEXOBJ)
-
-DYN_LIBC_OBJ = $(PICODIR)/dyn_syscalls.o $(PICODIR)/errlist.o \
-	$(patsubst $(OBJDIR)/%.o,$(PICODIR)/%.o,$(DYN_LIBC_PIC))
-
-DYN_PTHREAD_OBJS = $(patsubst $(OBJDIR)/%.o,$(PICODIR)/%.o,$(LIBPTHREAD_OBJS))
-
-DYN_LIBDL_OBJS = $(patsubst $(OBJDIR)/%.o,$(PICODIR)/%.o,$(LIBDLOBJ))
-
-DYN_LIBCOMPAT_OBJS = $(patsubst $(OBJDIR)/%.o,$(PICODIR)/%.o,$(LIBCOMPATOBJ))
-
-DYN_LIBMATH_OBJS = $(patsubst $(OBJDIR)/%.o,$(PICODIR)/%.o,$(LIBMATHOBJ))
-
-$(PICODIR)/libc.so: $(PICODIR) $(DYN_LIBC_OBJ)
-	$(LD_UNSET) $(CROSS)$(CC) -nostdlib -shared -o $@ $(CFLAGS) -fPIC $(DYN_LIBC_OBJ) -lgcc -Wl,-soname=libc.so
-
-$(PICODIR)/libpthread.so: $(DYN_PTHREAD_OBJS) dietfeatures.h
-	$(LD_UNSET) $(CROSS)$(CC) -nostdlib -shared -o $@ $(CFLAGS) -fPIC $(DYN_PTHREAD_OBJS) -L$(PICODIR) -lc -Wl,-soname=libpthread.so
-
-$(PICODIR)/libdl.so: libdl/_dl_main.c dietfeatures.h
-	$(LD_UNSET) $(CROSS)$(CC) -D__OD_CLEAN_ROOM -DNODIETREF -fPIC -nostdlib -shared -Bsymbolic -Wl,-Bsymbolic \
-		-o $@ $(SAFE_CFLAGS) $(INC) libdl/_dl_main.c -Wl,-soname=libdl.so
-
-$(OBJDIR)/pthread_create.o $(PICODIR)/pthread_create.o: dietfeatures.h
-$(OBJDIR)/pthread_internal.o $(PICODIR)/pthread_internal.o: dietfeatures.h
-
-#$(PICODIR)/libdl.so: $(DYN_LIBDL_OBJS) dietfeatures.h
-#	$(CROSS)$(CC) -nostdlib -shared -o $@ $(CFLAGS) -fPIC $(DYN_LIBDL_OBJS) -L$(PICODIR) -ldietc -Wl,-soname=libdl.so
-
-$(PICODIR)/libcompat.so: $(DYN_LIBCOMPAT_OBJS) dietfeatures.h
-	$(LD_UNSET) $(CROSS)$(CC) -nostdlib -shared -o $@ $(CFLAGS) -fPIC $(DYN_LIBCOMPAT_OBJS) -L$(PICODIR) -lc -Wl,-soname=libcompat.so
-
-$(PICODIR)/libm.so: $(DYN_LIBMATH_OBJS) dietfeatures.h
-	$(LD_UNSET) $(CROSS)$(CC) -nostdlib -shared -o $@ $(CFLAGS) -fPIC $(DYN_LIBMATH_OBJS) -L$(PICODIR) -lc -Wl,-soname=libm.so
-
 
 $(SYSCALLOBJ): syscalls.h
 
-$(OBJDIR)/elftrunc: $(OBJDIR)/diet contrib/elftrunc.c
-	bin-$(MYARCH)/diet $(CROSS)$(CC) $(CFLAGS) -o $@ contrib/elftrunc.c
-
-$(OBJDIR)/dnsd: $(OBJDIR)/diet contrib/dnsd.c
-	bin-$(MYARCH)/diet $(CROSS)$(CC) $(CFLAGS) -o $@ contrib/dnsd.c
 
 VERSION=dietlibc-$(shell head -n 1 CHANGES|sed 's/://')
 CURNAME=$(notdir $(shell pwd))
 
-$(OBJDIR)/diet: $(OBJDIR)/start.o $(OBJDIR)/dyn_start.o diet.c $(OBJDIR)/dietlibc.a $(OBJDIR)/dyn_stop.o
-	$(CROSS)$(CC) -isystem include $(CFLAGS) -nostdlib -o $@ $^ -DDIETHOME=\"$(HOME)\" -DVERSION=\"$(VERSION)\" -lgcc
-	$(CROSS)strip -R .comment -R .note $@
-
-$(OBJDIR)/diet-i: $(OBJDIR)/start.o $(OBJDIR)/dyn_start.o diet.c $(OBJDIR)/dietlibc.a $(OBJDIR)/dyn_stop.o
-	$(CROSS)$(CC) -isystem include $(CFLAGS) -nostdlib -o $@ $^ -DDIETHOME=\"$(prefix)\" -DVERSION=\"$(VERSION)\" -DINSTALLVERSION -lgcc
-	$(CROSS)strip -R .comment -R .note $@
-
-$(PICODIR)/diet-dyn: $(PICODIR)/start.o $(PICODIR)/dyn_start.o diet.c
-	$(LD_UNSET) $(CROSS)$(CC) -isystem include $(CFLAGS) -fPIC -nostdlib -o $@ $^ -DDIETHOME=\"$(HOME)\" -D__DYN_LIB -DVERSION=\"$(VERSION)\" -L$(PICODIR) -lc -lgcc $(PICODIR)/dyn_stop.o -Wl,-dynamic-linker=$(HOME)/$(PICODIR)/libdl.so
-	$(CROSS)strip -R .command -R .note $@
-
-$(PICODIR)/diet-dyn-i: $(PICODIR)/start.o $(PICODIR)/dyn_start.o diet.c
-	$(LD_UNSET) $(CROSS)$(CC) -isystem include $(CFLAGS) -fPIC -nostdlib -o $@ $^ -DDIETHOME=\"$(prefix)\" -D__DYN_LIB -DVERSION=\"$(VERSION)\" -L$(PICODIR) -lc -lgcc $(PICODIR)/dyn_stop.o -Wl,-dynamic-linker=$(ILIBDIR)/libdl.so -DINSTALLVERSION
-	$(CROSS)strip -R .command -R .note $@
-
-$(OBJDIR)/djb: $(OBJDIR)/compile $(OBJDIR)/load
-
-$(OBJDIR)/compile:
-	echo 'exec' $(CC) '$(CFLAGS) -I$(PWD)/$(OBJDIR)/include -c $${1+"$$@"}' > $@
-	chmod 755 $@
-
-$(OBJDIR)/load:
-	echo 'main="$$1"; shift; exec' $(CC) '-nostdlib -o "$$main" $(PWD)/$(OBJDIR)/start.o "$$main".o $${1+"$$@"} $(PWD)/$(OBJDIR)/dietlibc.a -lgcc'  > $@
-	chmod 755 $@
 
 clean:
 	rm -f *.o *.a t t1 compile load elftrunc exports mapfile libdietc.so
@@ -357,60 +135,18 @@ t:
 t1:
 	$(CROSS)$(CC) -g -o t1 t.c
 
-install-bin: $(OBJDIR)/start.o $(OBJDIR)/dietlibc.a $(OBJDIR)/librpc.a $(OBJDIR)/liblatin1.a $(OBJDIR)/libcompat.a $(OBJDIR)/elftrunc $(OBJDIR)/diet-i
-	$(INSTALL) -d $(DESTDIR)$(ILIBDIR) $(DESTDIR)$(MAN1DIR) $(DESTDIR)$(BINDIR)
-	$(INSTALL) $(OBJDIR)/start.o $(DESTDIR)$(ILIBDIR)/start.o
-	$(INSTALL) -m 644 $(OBJDIR)/libm.a $(OBJDIR)/libpthread.a $(OBJDIR)/librpc.a \
-$(OBJDIR)/liblatin1.a $(OBJDIR)/libcompat.a $(OBJDIR)/libcrypt.a $(DESTDIR)$(ILIBDIR)
-	$(INSTALL) -m 644 $(OBJDIR)/dietlibc.a $(DESTDIR)$(ILIBDIR)/libc.a
-ifeq ($(MYARCH),$(ARCH))
-	$(INSTALL) $(OBJDIR)/diet-i $(DESTDIR)$(BINDIR)/diet
-	-$(INSTALL) $(PICODIR)/diet-dyn-i $(DESTDIR)$(BINDIR)/diet-dyn
-endif
-	$(INSTALL) -m 755 $(OBJDIR)/elftrunc $(OBJDIR)/dnsd $(DESTDIR)$(BINDIR)
-	$(INSTALL) -m 644 diet.1 $(DESTDIR)$(MAN1DIR)/diet.1
-
-install-profiling:
-	-$(INSTALL) $(OBJDIR)/pstart.o $(OBJDIR)/libgmon.a $(OBJDIR)/dyn_start.o $(OBJDIR)/dyn_stop.o $(DESTDIR)$(ILIBDIR)
-
-install-pic:
-	-$(INSTALL) $(PICODIR)/libc.so $(DESTDIR)$(ILIBDIR)/libc.so
-	-$(INSTALL) $(PICODIR)/libpthread.so $(DESTDIR)$(ILIBDIR)/libpthread.so
-	-$(INSTALL) $(PICODIR)/libdl.so $(DESTDIR)$(ILIBDIR)/libdl.so
-	-$(INSTALL) $(PICODIR)/libcompat.so $(DESTDIR)$(ILIBDIR)/libcompat.so
-	-$(INSTALL) $(PICODIR)/libm.so $(DESTDIR)$(ILIBDIR)/libm.so
-	-$(INSTALL) $(PICODIR)/dyn_start.o $(DESTDIR)$(ILIBDIR)/dyn_dstart.o
-	-$(INSTALL) $(PICODIR)/dyn_stop.o  $(DESTDIR)$(ILIBDIR)/dyn_dstop.o
-	-$(INSTALL) $(PICODIR)/dstart.o $(PICODIR)/dyn_so_start.o $(DESTDIR)$(ILIBDIR)
-	if test -f $(PICODIR)/libc.so -a ! -f $(DESTDIR)/etc/diet.ld.conf; then echo "$(ILIBDIR)" > $(DESTDIR)/etc/diet.ld.conf; fi
-
 install-headers:
-	for i in `find include -name \*.h`; do install -m 644 -D $$i $(DESTDIR)$(prefix)/$$i; done
+	for i in `find include -name \*.h`; do install -m 644 -D $$i $(HEADERDIR)/$$i; done
 
 
-install: install-bin install-profiling install-pic install-headers
+install: install-headers
 
-uninstall:
-	for i in start.o libm.a libpthread.a librpc.a liblatin1.a libcompat.a libcrypt.a libc.a; do rm -f $(DESTDIR)$(ILIBDIR)/$$i; done
-	rm -f $(DESTDIR)$(BINDIR)/diet $(DESTDIR)$(BINDIR)/diet-dyn
-	for i in libgmon.a dyn_start.o dyn_stop.o libc.so libpthread.so libdl.so libcompat.so dyn_dstart.o dyn_dstop.o dyn_so_start.o; do rm -f $(DESTDIR)$(ILIBDIR)/$$i; done
-	rm -f $(DESTDIR)$(MAN1DIR)/diet.1 $(DESTDIR)/etc/diet.ld.conf
-	for i in `find include -name \*.h`; do rm -f $(DESTDIR)$(prefix)/$$i; done
-	-rmdir $(DESTDIR)$(ILIBDIR) $(DESTDIR)$(MAN1DIR) $(DESTDIR)$(BINDIR)
 
-.PHONY: sparc ppc mips arm alpha i386 parisc mipsel powerpc s390 sparc64
-.PHONY: x86_64 ia64 ppc64 s390x
+.PHONY: i386 x86_64
 
-arm sparc alpha mips parisc s390 sparc64 x86_64 ia64 ppc64 s390x:
+x86_64:
 	$(MAKE) ARCH=$@ CROSS=$@-linux- all
 
-.PHONY: x32
-x32:
-ifeq ($(MYARCH),x86_64)
-	$(MAKE) ARCH=$@ CC="$(CC) -mx32" all
-else
-	$(MAKE) ARCH=$@ CROSS=x86_64-linux- CC="$(CC) -mx32" all
-endif
 
 i386:
 ifeq ($(MYARCH),x86_64)
@@ -419,31 +155,7 @@ else
 	$(MAKE) ARCH=$@ CROSS=$@-linux- all
 endif
 
-ppc:
-ifeq ($(MYARCH),ppc64)
-	$(MAKE) ARCH=$@ CC="$(CC) -m32" all
-else
-	$(MAKE) ARCH=$@ CROSS=$@-linux- all
-endif
 
-# Cross compile for little endian MIPS
-mipsel:
-	$(MAKE) ARCH=$@ CROSS=mips-linux- all
-
-mips-gnu:
-	$(MAKE) ARCH=$@ CROSS=$@-linux-gnu- all
-
-# Some people named their cross compiler toolchain powerpc-linux-gcc
-powerpc:
-	$(MAKE) ARCH=ppc CROSS=powerpc-linux- all
-
-hppa:
-	ln -sf bin-parisc bin-hppa
-	$(MAKE) ARCH=parisc CROSS=hppa-linux- all
-
-CROSS_ARCH=arm sparc ppc alpha i386 mips sparc64 x86_64 s390 parisc
-cross:
-	$(MAKE) $(subst $(ARCH),,$(CROSS_ARCH))
 
 
 # these depend on dietfeatures.h for large file backward compatibility
