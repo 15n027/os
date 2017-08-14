@@ -31,6 +31,7 @@ idt 193, 255
   <idt_base + vector * 8 + 7>
   <pusha>
 */
+.align 1
 idt_common_asm:
      push %eax
      push %ebx
