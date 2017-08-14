@@ -26,7 +26,6 @@ INC=-I. -isystem include
 
 VPATH=lib:libstdio:libugly:libcruft:libcrypt:libshell:liblatin1:libcompat:libdl:librpc:libregex:libm:profiling
 
-SYSCALLOBJ=$(patsubst syscalls.s/%.S,$(OBJDIR)/%.o,$(wildcard syscalls.s/*.S))
 
 LIBOBJ=$(patsubst lib/%.c,$(OBJDIR)/%.o,$(wildcard lib/*.c))
 LIBUGLYOBJ=$(patsubst libugly/%.c,$(OBJDIR)/%.o,$(wildcard libugly/*.c))
@@ -34,14 +33,12 @@ LIBSTDIOOBJ=$(patsubst libstdio/%.c,$(OBJDIR)/%.o,$(wildcard libstdio/*.c))
 LIBCRUFTOBJ=$(patsubst libcruft/%.c,$(OBJDIR)/%.o,$(wildcard libcruft/*.c))
 LIBCRYPTOBJ=$(patsubst libcrypt/%.c,$(OBJDIR)/%.o,$(wildcard libcrypt/*.c))
 LIBSHELLOBJ=$(patsubst libshell/%.c,$(OBJDIR)/%.o,$(wildcard libshell/*.c))
-LIBCOMPATOBJ=$(patsubst libcompat/%.c,$(OBJDIR)/%.o,$(wildcard libcompat/*.c)) $(OBJDIR)/syscall.o
 LIBMATH=$(patsubst libm/%.c,%.o,$(wildcard libm/*.c))
 
 LIBREGEXOBJ=$(patsubst libregex/%.c,$(OBJDIR)/%.o,$(wildcard libregex/*.c))
 
 LIBGMON_OBJS=$(OBJDIR)/__mcount.o $(OBJDIR)/monitor.o $(OBJDIR)/profil.o
 
-include $(ARCH)/Makefile.add
 
 LIBMATHOBJ=$(patsubst %,$(OBJDIR)/%,$(LIBMATH))
 
@@ -61,9 +58,6 @@ $(OBJDIR)/%: $(OBJDIR)
 $(OBJDIR)/pstart.o: start.S
 	$(CROSS)$(CC) $(INC) $(CFLAGS) -DPROFILING -c $< -o $@
 
-$(OBJDIR)/%.o: %.S $(ARCH)/syscalls.h
-	$(CROSS)$(CC) $(INC) $(CFLAGS) -c $< -o $@
-
 $(OBJDIR)/%.o: %.c
 	$(CROSS)$(CC) $(INC) $(CFLAGS) -c $< -o $@ -D__dietlibc__
 
@@ -73,9 +67,10 @@ CC+=-D__dietlibc__
 $(OBJDIR)/crypt.o: libcrypt/crypt.c
 	$(CROSS)$(CC) $(INC) $(SAFER_CFLAGS) -c $< -o $@
 
-DIETLIBC_OBJ = $(OBJDIR)/unified.o \
-$(LIBOBJ) $(LIBSTDIOOBJ) \
-$(OBJDIR)/__longjmp.o $(OBJDIR)/setjmp.o
+#DIETLIBC_OBJ = $(OBJDIR)/unified.o \
+#$(LIBOBJ) $(LIBSTDIOOBJ) \
+#$(OBJDIR)/__longjmp.o $(OBJDIR)/setjmp.o
+DIETLIBC_OBJ := $(LIBOBJ) $(LIBSTDIOOBJ)
 
 $(OBJDIR)/dietlibc.a: $(DIETLIBC_OBJ) $(OBJDIR)/start.o
 	$(CROSS)ar cru $@ $(DIETLIBC_OBJ)
@@ -104,8 +99,6 @@ $(OBJDIR)/libm.a: $(LIBMATHOBJ)
 
 LD_UNSET = env -u LD_RUN_PATH
 
-
-$(SYSCALLOBJ): syscalls.h
 
 
 VERSION=dietlibc-$(shell head -n 1 CHANGES|sed 's/://')
@@ -159,7 +152,6 @@ endif
 
 
 # these depend on dietfeatures.h for large file backward compatibility
-$(OBJDIR)/__fstat64.o $(OBJDIR)/__lstat64.o $(OBJDIR)/__stat64.o $(OBJDIR)/lseek64.o $(OBJDIR)/readdir64.o $(OBJDIR)/stat64.o $(OBJDIR)/lstat64.o $(OBJDIR)/fstat64.o $(OBJDIR)/truncate64.o $(OBJDIR)/__truncate64.o $(OBJDIR)/ftruncate64.o $(OBJDIR)/__ftruncate64.o $(OBJDIR)/sendfile64.o $(OBJDIR)/__sendfile64.o $(PICODIR)/dyn_syscalls.o $(PICODIR)/__truncate64.o $(PICODIR)/__ftruncate64.o $(PICODIR)/__stat64.o $(PICODIR)/__lstat64.o $(PICODIR)/__fstat64.o $(OBJDIR)/__sendfile64.o $(OBJDIR)/fstatfs64.o $(OBJDIR)/statfs64.o: dietfeatures.h
 
 # these depend on dietfeatures.h for thread support
 $(OBJDIR)/alloc.o $(OBJDIR)/perror.o $(OBJDIR)/logging.o $(OBJDIR)/unified.o $(OBJDIR)/clone.o $(OBJDIR)/set_errno.o: dietfeatures.h
