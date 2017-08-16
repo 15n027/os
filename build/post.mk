@@ -1,8 +1,25 @@
+all: $(OBJS) | subdirs
+
+subdirs:
+	@for dir in $(SUBDIRS); do \
+		if [ -d $$dir ]; then \
+			$(MAKE) -C $$dir; \
+		fi; \
+	done
+
+$(OBJS): Makefile $(TOPDIR)/build/defs.mk $(TOPDIR)/build/post.mk $(TOPDIR)/build/pre-targets.mk | subdirs
+
 $(OBJDIR)/%.o: %.c
-	@mkdir -p $(dir $@)
-	$(CC) -c -o $@ $< $(CFLAGS) $(CPPFLAGS)
+	@$(CC) -c -o $@ $< $(CFLAGS) $(CPPFLAGS)
 
 $(OBJDIR)/%.o: %.s
-	@mkdir -p $(dir $@)
-	$(CC) -c -o $@ $< $(CFLAGS) $(CPPFLAGS)
+	@$(CC) -c -o $@ $< $(CFLAGS) $(CPPFLAGS)
+
+clean:
+	$(RM) $(OBJS)
+	@for dir in $(SUBDIRS); do \
+		if [ -d $$dir ]; then \
+			$(MAKE) -C $$dir clean; \
+		fi; \
+	done
 

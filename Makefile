@@ -1,21 +1,8 @@
-TOPDIR := $(abspath .)
-export TOPDIR
-include $(TOPDIR)/build/defs.mk
+include build/defs.mk
 
-DIRS := kernel iso
+SUBDIRS := kernel iso
 
-all:
-	for dir in $(DIRS); do \
-		if [ -d $$dir ]; then \
-			$(MAKE) -C $$dir; \
-		fi; \
-	done
+include build/post.mk
 
 clean:
-	$(RM) -rf $(OBJDIR) $(ISODIR) $(LIBDIR)
-	for dir in $(DIRS); do \
-		if [ -d $$dir ]; then \
-			$(MAKE) -C $$dir clean; \
-		fi; \
-	done
-
+	$(RM) -rf $(OBJDIRPREFIX)

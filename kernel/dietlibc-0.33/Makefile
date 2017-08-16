@@ -1,24 +1,22 @@
-TOPDIR ?= ../../
+TOPDIR ?= ../..
 include $(TOPDIR)/build/defs.mk
-
-INSTALL=install
 
 MYARCH := x86_64
 ifeq ($(ARCH), i686)
 	ARCH := i386
 endif
 
-OBJDIR := $(OBJDIR)/libc
-HEADERDIR := $(OBJDIR)
+HEADERDIR := $(OBJDIRPREFIX)
 
 HOME=$(shell pwd)
 
-WHAT=	$(OBJDIR) $(OBJDIR)/start.o \
-	$(OBJDIR)/dietlibc.a $(OBJDIR)/liblatin1.a \
-	$(OBJDIR)/libcompat.a \
-	$(OBJDIR)/libcrypt.a
+WHAT=	\
+	$(OBJDIR)/libdietlibc.a
+# $(OBJDIR)/liblatin1.a \
+#	$(OBJDIR)/libcompat.a
 
-all: $(WHAT) install-headers
+all: $(WHAT) install install-headers
+
 
 profiling: $(OBJDIR)/libgmon.a $(OBJDIR)/pstart.o
 
@@ -43,6 +41,8 @@ LIBGMON_OBJS=$(OBJDIR)/__mcount.o $(OBJDIR)/monitor.o $(OBJDIR)/profil.o
 LIBMATHOBJ=$(patsubst %,$(OBJDIR)/%,$(LIBMATH))
 
 PWD=$(shell pwd)
+HEADERS=$(shell find include -name \*.h)
+INSTALLEDHEADERS=$(addprefix $(HEADERDIR)/,$(HEADERS))
 
 .SUFFIXES:
 .SUFFIXES: .S .c
@@ -56,39 +56,28 @@ $(OBJDIR):
 $(OBJDIR)/%: $(OBJDIR)
 
 $(OBJDIR)/pstart.o: start.S
-	$(CROSS)$(CC) $(INC) $(CFLAGS) -DPROFILING -c $< -o $@
+	@$(CROSS)$(CC) $(INC) $(CFLAGS) -DPROFILING -c $< -o $@
 
 $(OBJDIR)/%.o: %.c
-	$(CROSS)$(CC) $(INC) $(CFLAGS) -c $< -o $@ -D__dietlibc__
+	@$(CROSS)$(CC) $(INC) $(CFLAGS) -c $< -o $@ -D__dietlibc__
 
 
 CC+=-D__dietlibc__
-
-$(OBJDIR)/crypt.o: libcrypt/crypt.c
-	$(CROSS)$(CC) $(INC) $(SAFER_CFLAGS) -c $< -o $@
 
 #DIETLIBC_OBJ = $(OBJDIR)/unified.o \
 #$(LIBOBJ) $(LIBSTDIOOBJ) \
 #$(OBJDIR)/__longjmp.o $(OBJDIR)/setjmp.o
 DIETLIBC_OBJ := $(LIBOBJ) $(LIBSTDIOOBJ)
 
-$(OBJDIR)/dietlibc.a: $(DIETLIBC_OBJ) $(OBJDIR)/start.o
-	$(CROSS)ar cru $@ $(DIETLIBC_OBJ)
+$(OBJDIR)/libdietlibc.a: $(DIETLIBC_OBJ)
+	@$(CROSS)ar cru $@ $(DIETLIBC_OBJ)
 
-
-$(OBJDIR)/libcrypt.a:
-	touch dummy.c
-	$(CROSS)$(CC) -c dummy.c
-	$(CROSS)ar cru $@ dummy.o
-	rm -f dummy.c dummy.o
-
-dummy.o:
 
 LIBLATIN1_OBJS=$(patsubst liblatin1/%.c,$(OBJDIR)/%.o,$(wildcard liblatin1/*.c))
 $(OBJDIR)/liblatin1.a: $(LIBLATIN1_OBJS)
 	$(CROSS)ar cru $@ $^
 
-$(OBJDIR)/libgmon.a: $(LIBGMON_OBJS)
+$(OBJDIR2)/libgmon.a: $(LIBGMON_OBJS)
 	$(CROSS)ar cru $@ $^
 
 $(OBJDIR)/libcompat.a: $(LIBCOMPATOBJ)
@@ -101,8 +90,8 @@ LD_UNSET = env -u LD_RUN_PATH
 
 
 
-VERSION=dietlibc-$(shell head -n 1 CHANGES|sed 's/://')
-CURNAME=$(notdir $(shell pwd))
+#VERSION=dietlibc-$(shell head -n 1 CHANGES|sed 's/://')
+#CURNAME=$(notdir $(shell pwd))
 
 
 clean:
@@ -112,28 +101,16 @@ clean:
 	$(MAKE) -C dynlinker clean
 	$(MAKE) -C libdl clean
 
-tar: clean rename
-	cd ..; tar cvvf $(VERSION).tar.bz2 --use=bzip2 --exclude CVS $(VERSION)
 
-rename:
-	if test $(CURNAME) != $(VERSION); then cd .. && mv $(CURNAME) $(VERSION); fi
+install: $(LIBDIR)/libdietlibc.a
 
-$(OBJDIR)/exports: $(OBJDIR)/dietlibc.a
-	nm -g $(OBJDIR)/dietlibc.a | grep '\<T\>' | awk '{ print $$3 }' | sort -u > $(OBJDIR)/exports
+$(LIBDIR)/libdietlibc.a: $(OBJDIR)/libdietlibc.a
+	@$(INSTALLLIB) $<
 
-.PHONY: t t1
-t:
-	$(CROSS)$(CC) -g $(CFLAGS) -fno-builtin -nostdlib -isystem include -o t t.c $(OBJDIR)/start.o $(OBJDIR)/dyn_start.o $(OBJDIR)/dietlibc.a -lgcc $(OBJDIR)/dyn_stop.o -Wl,-Map,mapfile
+install-headers: $(INSTALLEDHEADERS)
 
-t1:
-	$(CROSS)$(CC) -g -o t1 t.c
-
-install-headers:
-	for i in `find include -name \*.h`; do install -m 644 -D $$i $(HEADERDIR)/$$i; done
-
-
-install: install-headers
-
+$(HEADERDIR)/%.h: %.h
+	install -m 644 -D $< $@
 
 .PHONY: i386 x86_64
 
@@ -194,8 +171,6 @@ $(OBJDIR)/getservent.o $(OBJDIR)/iconv.o $(OBJDIR)/iconv_open.o \
 $(OBJDIR)/netent.o $(OBJDIR)/system.o $(OBJDIR)/stdin.o $(OBJDIR)/stdout.o \
 $(OBJDIR)/stderr.o: dietfeatures.h
 
-# these depend on dietfeatures.h for WANT_CRYPT_MD5
-$(OBJDIR)/crypt.o: dietfeatures.h
 
 # these depend on dietfeatures.h for WANT_FREAD_OPTIMIZATION
 $(OBJDIR)/fread.o $(OBJDIR)/fwrite.o: dietfeatures.h
@@ -238,7 +213,7 @@ $(OBJDIR)/fcntl64.o: dietfeatures.h
 # WANT_SSP
 # This facepalm brought to you by: Ubuntu!
 $(OBJDIR)/stackgap.o: lib/stackgap.c dietfeatures.h
-	$(CROSS)$(CC) $(INC) $(CFLAGS) -c lib/stackgap.c -o $@ -D__dietlibc__ -fno-stack-protector
+	@$(CROSS)$(CC) $(INC) $(CFLAGS) -c lib/stackgap.c -o $@ -D__dietlibc__ -fno-stack-protector
 	$(COMMENT) -$(CROSS)strip -x -R .comment -R .note $@
 
 # WANT_MALLOC_ZERO
