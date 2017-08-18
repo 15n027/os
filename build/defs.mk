@@ -7,8 +7,8 @@ ifeq ($(origin ARCH), undefined)
 $(error ARCH not set)
 endif
 
-PFX := $(abspath $(TOPDIR)/toolchain)/bin/$(ARCH)-elf-
-TOOLCHAINLIBDIR := $(abspath $(TOPDIR)/toolchain)/lib
+PFX := $(abspath $(TOPDIR)/toolchain)/installed/bin/$(ARCH)-elf-
+TOOLCHAINLIBDIR := $(abspath $(TOPDIR)/toolchain/installed)/lib
 
 CC := $(TOPDIR)/build/cc.sh $(VERBOSE) $(PFX)gcc
 #CC := $(PFX)gcc
