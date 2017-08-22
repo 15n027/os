@@ -7,8 +7,6 @@ FILE *__stdio_root;
 
 int __stdio_atexit=0;
 
-int fflush(FILE *stream) __attribute__((weak,alias("fflush_unlocked")));
-
 void __stdio_flushall(void) {
   fflush(0);
 }
@@ -65,4 +63,3 @@ int __stdio_outs(const char *s,size_t len) {
   return fwrite(s,1,(size_t)len,stdout)==len?1:0;
 }
 
-link_warning("fflush","warning: your code uses stdio (7+k bloat).")

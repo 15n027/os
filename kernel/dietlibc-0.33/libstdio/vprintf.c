@@ -2,10 +2,7 @@
 #include <unistd.h>
 #include "dietstdio.h"
 
-int __stdio_outs(const char *s,size_t len) __attribute__((weak));
-int __stdio_outs(const char *s,size_t len) {
-  return (write(1,s,len)==(ssize_t)len)?1:0;
-}
+int __stdio_outs(const char *s,size_t len);
 
 int vprintf(const char *format, va_list ap)
 {

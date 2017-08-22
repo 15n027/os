@@ -12,9 +12,9 @@ kaputt:
     if (fflush_unlocked(stream)) goto kaputt;
   if (stream->flags&NOBUF) {
 #if __BYTE_ORDER == __LITTLE_ENDIAN
-    if (__libc_write(stream->fd,&c,1) != 1)
+    if (write(stream->fd,&c,1) != 1)
 #else
-    if (__libc_write(stream->fd,(char*)&c+sizeof(c)-1,1) != 1)
+    if (write(stream->fd,(char*)&c+sizeof(c)-1,1) != 1)
 #endif
       goto kaputt;
     return (unsigned char)c;

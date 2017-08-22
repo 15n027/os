@@ -404,4 +404,3 @@ num_printf:
   return len;
 }
 
-link_warning("__v_printf","warning: the printf functions add several kilobytes of bloat.")

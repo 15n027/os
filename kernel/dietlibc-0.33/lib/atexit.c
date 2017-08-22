@@ -22,10 +22,10 @@ extern void __thread_doexit(int doexit);
 void __libc_exit(int code);
 void __libc_exit(int code) {
   register int i=atexit_counter;
-  __thread_doexit(code);
+  for(;;);
   while(i) {
     __atexitlist[--i]();
   }
-  _exit(code);
+  for(;;);
 }
 void exit(int code) __attribute__((alias("__libc_exit")));

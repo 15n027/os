@@ -16,7 +16,7 @@ kaputt:
   if (__unlikely(len>stream->buflen || (stream->flags&NOBUF))) {
     if (fflush_unlocked(stream)) return 0;
     do {
-      res=__libc_write(stream->fd,ptr,len);
+      res=write(stream->fd,ptr,len);
     } while (res==-1 && errno==EINTR);
   } else {
     /* try to make the common case fast */
