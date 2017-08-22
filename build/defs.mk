@@ -12,7 +12,7 @@ TOOLCHAINLIBDIR := $(abspath $(TOPDIR)/toolchain/installed)/lib
 
 CC := $(TOPDIR)/build/cc.sh $(VERBOSE) $(PFX)gcc
 #CC := $(PFX)gcc
-LD := $(PFX)gcc
+LD := $(CC)
 STRIP := $(PFX)strip
 AR := $(PFX)ar
 AS := $(PFX)as
@@ -22,7 +22,10 @@ READELF := $(PFX)readelf
 OBJCOPY := $(PFX)objcopy
 OBJDUMP := $(PFX)objdump
 
-CFLAGS := -Wall -std=gnu99 -pedantic -mno-sse -mno-mmx -nostdlib -nostdinc -fno-omit-frame-pointer
+OPT := -fno-omit-frame-pointer -O2
+DEBUG :=  -g -ggdb -g3
+CFLAGS := -Wall -std=gnu99 -mno-sse -mno-mmx -nostdlib -nostdinc $(OPT) $(DEBUG) -static
+
 
 ifeq ($(ARCH), x86_64)
 	CFLAGS += -mno-red-zone
@@ -33,7 +36,8 @@ OBJDIR := $(OBJDIRPREFIX)$(CURDIR)
 LIBDIR := $(OBJDIRPREFIX)/lib
 TARGETDIR := $(OBJDIRPREFIX)/targets
 CPPFLAGS := -I $(OBJDIRPREFIX)/include -I$(TOPDIR)/kernel/include
-LDFLAGS := -L $(LIBDIR) -nostdlib -Wl,--no-gc-sections
+LDFLAGS := -L $(LIBDIR) -nostdlib -static
+# -Wl, --no-gc-sections
 INSTALL := $(TOPDIR)/build/install.sh $(VERBOSE) $(OBJDIRPREFIX)/..
 INSTALLLIB := $(INSTALL) $(LIBDIR)
 INSTALLTARGET := $(INSTALL) $(TARGETDIR)

@@ -3,7 +3,7 @@ all: $(OBJS) | subdirs
 subdirs:
 	@for dir in $(SUBDIRS); do \
 		if [ -d $$dir ]; then \
-			$(MAKE) -C $$dir; \
+			$(MAKE) -C $$dir || exit $$?; \
 		fi; \
 	done
 

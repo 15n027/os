@@ -27,5 +27,6 @@ if [ $VERBOSE -eq 0 ]; then
     echo $MSG
     "$@" > /dev/null
 else
+    echo "$@"
     "$@"
 fi
