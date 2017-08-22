@@ -16,7 +16,7 @@ $(OBJDIR)/%.o: %.s
 	@$(CC) -c -o $@ $< $(CFLAGS) $(CPPFLAGS)
 
 clean:
-	$(RM) $(OBJS)
+	$(RM) -rf $(OBJDIRPREFIX) $(OBJS)
 	@for dir in $(SUBDIRS); do \
 		if [ -d $$dir ]; then \
 			$(MAKE) -C $$dir clean; \
