@@ -1,4 +1,5 @@
 #include <string.h>
+#include <inttypes.h>
 #include <stdio.h>
 #include "device.h"
 #include "debug.h"
@@ -24,26 +25,15 @@ print_mmap(multiboot_info_t *mbi)
     }
 }
 
-extern const char _sctors[], _ectors[];
 
 void kern_entry(uint32_t mbsig, multiboot_info_t *mbi)
 {
-    extern void load_idt(void);
     sys_startup_fn *sys_startup_func;
-    uintptr_t ptr = (uintptr_t)_sctors, end = (uintptr_t)_ectors;
-    earlyconsole_init();
-    printf("ptr=%lx end=%lx diff=%lu\n", ptr, end, (end - ptr) / 4);
-    while (ptr < end) {
-        void (**fn)(void) = (void(**)(void))ptr;
-        (*fn)();
-        ptr += sizeof(fn);
-    }
+ 
+   earlyconsole_init();
     SET_FOREACH(sys_startup, sys_startup_func) {
-        printf("calling startup fn: %p\n", *sys_startup_func);
-        (*sys_startup_func)();
+         (*sys_startup_func)();
     }
-    //    load_gdt();
-    //load_idt();
     printf("mbsig=0x%x mbi=%p\n", mbsig, mbi);
     printf("flags=0x%x mem_lower=0x%x mem_upper=0x%x boot=0x%x\n",
             mbi->flags, mbi->mem_lower, mbi->mem_upper, mbi->boot_device);

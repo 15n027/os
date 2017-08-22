@@ -12,7 +12,7 @@ SECTIONS
         . = .;
         _stext = .;
         .text : {
-              *(.text)
+              *(.text*)
               _etext = ABSOLUTE(.);
               *(.gnu.linkonce.r.* .rodata .rodata*);
               *(.eh_frame_hdr);
@@ -29,14 +29,14 @@ SECTIONS
         }
 
         .data ALIGN(0x1000) : {
-              *(.data)
+              *(.data*)
               _edata = ABSOLUTE(.);
         }
 
         . = .;
         _sbss = .;
         .bss : {
-              *(.dynbss .bss .bss.* COMMON .gnu.linkonce.b.*)
+              *(.dynbss .bss .bss* COMMON .gnu.linkonce.b.*)
               
         }
         _ebss = ABSOLUTE(.);
@@ -47,8 +47,4 @@ SECTIONS
               early_stack = ABSOLUTE(.);
         }
         _end_kernel = .;
-        .text.startup : {
-              KEEP(*(.text.startup*))
-        }
-        _end_kernel_init = .;
 }

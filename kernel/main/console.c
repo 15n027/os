@@ -1,7 +1,10 @@
 #include <stddef.h>
 #include <string.h>
 #include <stdarg.h>
+#include <ctype.h>
+#include <stdint.h>
 #include <stdio.h>
+#include "startup.h"
 #include "basic_defs.h"
 #include "kassert.h"
 #include "debug.h"
@@ -48,7 +51,7 @@ debug_out(const char *fmt, ...)
 }
 
 size_t
-write(int fd, const void *buf, size_t len)
+__kernel_write(int fd, const void *buf, size_t len)
 {
     debug_outs(buf, len);
     return console_write(fd, buf, len);
@@ -103,7 +106,18 @@ static const int VGA_MAX_LINE = 24;
 void
 earlyconsole_init(void)
 {
-    DBG("");
-    memset(vga_txt_mem, 0, VGA_TXT_BUF_SIZE);
+    int i, j;
+    int c;
+    for (i = 0; i < 25; i++) {
+        for (j = 0; j < 80; j++) {
+            c = vga_txt_mem[i * 80 + j] & 0xff;
+            if (!isspace(c)) {
+                line = i + 1;
+                break;
+            } else {
+                vga_txt_mem[i * 80 + j] |= 0xf00;
+            }
+        }
+    }
 }
 
