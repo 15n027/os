@@ -1,6 +1,15 @@
 #include "stdio_impl.h"
 #include "pthread_impl.h"
 
+#if 1
+int __lockfile(FILE *f)
+{
+    return 1;
+}
+void __unlockfile(FILE *f)
+{
+}
+#else
 int __lockfile(FILE *f)
 {
 	int owner, tid = __pthread_self()->tid;
@@ -26,3 +35,4 @@ void __unlockfile(FILE *f)
 
 	if (f->waiters) __wake(&f->lock, 1, 1);
 }
+#endif
