@@ -1,22 +1,54 @@
 
 ENTRY(_start)
 OUTPUT_FORMAT(elf32-i386)
-
+LD_FEATURE ("SANE_EXPR")
 SECTIONS
 {
         . = 1M;
-        multiboot ALIGN(0x1000) : AT(1M) {
-              *(multiboot)
+        .multiboot : {
+             *(.multiboot)
         }
-        .text ALIGN(0x1000) : {
-              *(.text*)
-               ctors_begin = .;
-              *(.ctors*)
-              ctors_end = .;
-              *(.rodata*)
+
+        . = .;
+        _stext = .;
+        .text : {
+              *(.text)
+              _etext = ABSOLUTE(.);
+              *(.gnu.linkonce.r.* .rodata .rodata*);
+              *(.eh_frame_hdr);
+              *(.eh_frame);
         }
+        . = .;
+        _sctors = .;
+        .ctors : {
+              KEEP(*(.ctors));
+              KEEP(*(.ctors.*));
+              KEEP(*(.init_array));
+              KEEP(*(.preinit_array))
+              _ectors = ABSOLUTE(.);
+        }
+
         .data ALIGN(0x1000) : {
               *(.data)
-              *(.bss) *(COMMON)
+              _edata = ABSOLUTE(.);
         }
+
+        . = .;
+        _sbss = .;
+        .bss : {
+              *(.dynbss .bss .bss.* COMMON .gnu.linkonce.b.*)
+              
+        }
+        _ebss = ABSOLUTE(.);
+        _bss_size = SIZEOF(.bss);
+        . = ALIGN(16);
+        .stack : {
+              . += 10240;
+              early_stack = ABSOLUTE(.);
+        }
+        _end_kernel = .;
+        .text.startup : {
+              KEEP(*(.text.startup*))
+        }
+        _end_kernel_init = .;
 }

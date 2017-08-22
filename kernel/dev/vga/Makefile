@@ -1,7 +1,7 @@
-TOPDIR ?= ../..
+TOPDIR ?= ../../../
 include $(TOPDIR)/build/defs.mk
 
-SUBDIRS := serial vga
+SRCS := vga.c
 
 include $(TOPDIR)/build/pre-targets.mk
 include $(TOPDIR)/build/post.mk

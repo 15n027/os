@@ -1,4 +1,4 @@
-TOPDIR ?= ../../../
+TOPDIR ?= ../../..
 include $(TOPDIR)/build/defs.mk
 
 SRCS := uart.c

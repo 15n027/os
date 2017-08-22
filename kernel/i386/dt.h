@@ -1,0 +1,60 @@
+#pragma once
+
+#include <stdint.h>
+#include "exception.h"
+
+typedef struct {
+    uint16_t limit;
+    uint32_t base;
+} __attribute__((packed)) baselimit;
+
+#define G_SHIFT (23 + 32)
+#define D_SHIFT (22 + 32)
+#define P_SHIFT (15 + 32)
+#define LIMIT2_SHIFT (16 + 32)
+#define LIMIT2_MASK 0xf000000000000ull
+#define DPL_SHIFT (13 + 32)
+#define TYPE_SHIFT (8 + 32)
+#define FLAT_LIMIT 0xfffff
+
+#define G (1ull << G_SHIFT)
+#define D (1ull << D_SHIFT)
+#define B D
+#define P (1ull << P_SHIFT)
+#define DPL(dpl) ((uint64_t)(dpl) << DPL_SHIFT)
+#define LIMIT(limit) ((limit) & 0xffff) | (((uint64_t)(limit) << LIMIT2_SHIFT) & LIMIT2_MASK)
+#define TYPE(type) ((uint64_t)(type) << TYPE_SHIFT)
+
+#define IDT_TARGET(x) QWORD(HIWORD(x) << 16, LOWORD(x))
+enum DTYPE {
+    CS_CONFORMING_READABLE_ACCESSED = 0x1f,
+    CS_CONFORMING_READABLE_NOTACCESSED = 0x1e,
+    CS_CONFORMING_NOTREADABLE_ACCESSED = 0x1d,
+    CS_CONFORMING_NOTREADABLE_NOTACCESSED = 0x1c,
+    CS_NONCONFORMING_READABLE_ACCESSED = 0x1b,
+    CS_NONCONFORMING_READABLE_NOTACCESSED = 0x1a,
+    CS_NONCONFORMING_NOTREADABLE_ACCESSED = 0x19,
+    CS_NONCONFORMING_NOTREADABLE_NOTACCESSED = 0x18,
+
+    DS_EXUP_WRITEABLE_ACCESSED = 0x13,
+    DS_EXUP_WRITEABLE_NOTACCESSED = 0x12,
+    DS_EXUP_NOTWRITEABLE_ACCESSED = 0x11,
+    DS_EXUP_NOTWRITEABLE_NOTACCESSED = 0x10,
+    DS_EXDOWN_WRITEABLE_ACCESSED = 0x17,
+    DS_EXDOWN_WRITEABLE_NOTACCESSED = 0x16,
+    DS_EXDOWN_NOTWRITEABLE_ACCESSED = 0x15,
+    DS_EXDOWN_NOTWRITEABLE_NOTACCESSED = 0x14,
+
+    TSS16_AVAIL = 1,
+    LDT = 2,
+    TSS16_BUSY = 3,
+    CALLGATE16 = 4,
+    TASKGATE = 5,
+    INTGATE16 = 6,
+    TRAPGATE16 = 7,
+    TSS32_AVAIL = 9,
+    TSS32_BUSY = 11,
+    CALLGATE32 = 12,
+    INTGATE32 = 14,
+    TRAPGATE32 = 15,
+};

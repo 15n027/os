@@ -1,6 +1,18 @@
 .globl _start
-.extern main
+.extern kern_entry
+.extern early_stack
+.extern _sctors
+.extern _ectors
+
 _start:
-        mov $0x200000, %esp
-        call main
+        mov $early_stack, %esp
+        push %ebx
+        push %eax
+        push $0
+        popf
+        xor %eax, %eax
+        mov $_sbss, %edi
+        mov $_bss_size, %ecx
+        rep stosb
+        call kern_entry
         int3

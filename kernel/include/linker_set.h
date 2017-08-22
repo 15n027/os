@@ -1,14 +1,16 @@
 #ifndef LINKER_SET_H
 #define LINKER_SET_H
 #include <stddef.h>
+#include "basic_defs.h"
 
-#define CONCAT(x, y) x ## y
+#define CONCAT(x, y) x##y
+#define CONCAT2(x, y) CONCAT(x, y)
 
 #define LINKER_SET_(set) linker_set_##set
 #define SET_PREFIX(set) linker_set_##set
-#define SET_TYPE(set) struct CONCAT(SET_PREFIX(set), _t)
-#define SET_HEAD(set) CONCAT(SET_PREFIX(set), head)
-#define SET_TAIL(set) CONCAT(SET_PREFIX(set), tail)
+#define SET_TYPE(set) struct CONCAT2(SET_PREFIX(set), _t)
+#define SET_HEAD(set) CONCAT2(SET_PREFIX(set), _head)
+#define SET_TAIL(set) CONCAT2(SET_PREFIX(set), _tail)
 
 #define SET_DECLARE(set, data_type)                         \
     SET_TYPE(set) { data_type data; SET_TYPE(set) *next; }; \
