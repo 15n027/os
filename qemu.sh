@@ -1,15 +1,17 @@
 #!/bin/bash
+QEMU=/home/jwhite/qemu/bin/qemu-system-x86_64
 QEMU=/home/jwhite/qemu/bin/qemu-system-i386
 TFTPDIR=~/os/tftp
 #PXEROM=~/ipxe/src/bin/808610ea.rom
 #ISO=~/ipxe/src/bin/ipxe.iso
-ISO=~/os/obj-i686/targets/boot.iso
+ISO=~/os/obj/targets/boot.iso
 if [ -n "$1" ]; then
 DBG="-s -S"
 fi
 $QEMU \
     -machine q35 \
     -cdrom $ISO \
+    -cpu max \
     -boot d \
     -m 64 \
     -enable-kvm \

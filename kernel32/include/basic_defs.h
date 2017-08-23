@@ -14,3 +14,4 @@
 #define HIDWORD(x) ((x) >> 32)
 #define LODWORD(x) ((x) & 0xffffffff)
 #define QWORD(x, y) ((((uint64_t)(x)) << 32) | (y))
+#define ARRAYSIZE(x) (sizeof (x) / sizeof ((x)[0]))

@@ -1,38 +1,32 @@
 TOPDIR ?= ..
 include $(TOPDIR)/build/defs.mk
 
-#SUBDIRS := dietlibc-0.33 dev musl-1.1.16
-SUBDIRS := musl-1.1.16 dev
-
 SRCS := multiboot/multiboot.c \
-	main/main.c main/start.s main/device.c main/earlyconsole.c \
-	main/console.c
-
-ifeq ($(ARCH), i686)
-	SRCS += i386/dt.c i386/exception.c i386/exc.s i386/idt-entry.c
-endif
+	main/main.c main/start.s main/earlyconsole.c \
+	main/console.c \
+	i386/dt.c i386/exception.c i386/exc.s i386/idt-entry.c \
+	i386/cpuid.c
 
 CFLAGS += -Werror
-CPPFLAGS += -I.
+CPPFLAGS += -I. -Iinclude
 LDSCRIPT := build/ldscript-$(ARCH)
 LDFLAGS += -T $(LDSCRIPT) -Wl,--no-gc-sections
-#LDLIBS := -ldietlibc -lgcc
 LDLIBS := -lc -lgcc
 
-KERNEL := $(OBJDIR)/kernel.elf
-KERNELTARGET := $(TARGETDIR)/kernel.elf
+KERNEL := kernel32.elf
 include $(TOPDIR)/build/pre-targets.mk
 
-all: $(KERNEL) $(KERNELTARGET)
+all: $(TARGETDIR)/$(KERNEL)
 
-$(KERNEL): $(OBJS)
-#	cd musl-1.1.16 && ./build.sh
-	$(LD) -o $@ $^ $(LDFLAGS) $(LDLIBS)
-	grub-file --is-x86-multiboot $(KERNEL)
+$(OBJDIR)/$(KERNEL): $(OBJS)
+	@$(LD) -o $@ $^ $(LDFLAGS) $(LDLIBS)
+	grub-file --is-x86-multiboot $@
 
-$(KERNELTARGET): $(KERNEL)
-	@$(INSTALLTARGET) $(KERNEL)
+$(TARGETDIR)/$(KERNEL): $(OBJDIR)/$(KERNEL)
+	@$(INSTALLTARGET) $<
 
 $(KERNEL): $(LDSCRIPT)
+
+$(OBJS): i386/cpuid-entry.h
 
 include $(TOPDIR)/build/post.mk

@@ -1,9 +1,11 @@
 #include <string.h>
 #include <inttypes.h>
 #include <stdio.h>
-#include "device.h"
+#include <stdlib.h>
 #include "debug.h"
 #include "startup.h"
+#include "kassert.h"
+#include "i386/cpuid.h"
 #include "multiboot/multiboot.h"
 
 SET_DEFINE(sys_startup, sys_startup_fn);
@@ -29,19 +31,17 @@ print_mmap(multiboot_info_t *mbi)
 void kern_entry(uint32_t mbsig, multiboot_info_t *mbi)
 {
     sys_startup_fn *sys_startup_func;
- 
-   earlyconsole_init();
+    earlyconsole_init();
     SET_FOREACH(sys_startup, sys_startup_func) {
          (*sys_startup_func)();
     }
+    ASSERT(cpuid_isset(LM));
+    ASSERT(cpuid_isset(NX));
     printf("mbsig=0x%x mbi=%p\n", mbsig, mbi);
     printf("flags=0x%x mem_lower=0x%x mem_upper=0x%x boot=0x%x\n",
             mbi->flags, mbi->mem_lower, mbi->mem_upper, mbi->boot_device);
     print_mmap(mbi);
-    printf("device_register\n");
-    device_register();
-    printf("ud2\n");
-    asm volatile("mov $0x8888, %eax; mov %eax, %gs\n");
-    printf("survived?\n");
-    for(;;);
+    printf("CLI;HLT");
+    fflush(0);
+    for(;;) asm("cli;hlt");
 }

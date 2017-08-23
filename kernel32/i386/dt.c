@@ -28,12 +28,14 @@ void load_gdt(void)
             "mov %1, %%ds\n"
             "mov %1, %%ss\n"
             "mov %1, %%es\n"
-            "mov %1, %%fs\n"
-            "mov %1, %%gs\n"
+            "xor %%eax, %%eax\n"
+            "mov %%eax, %%fs\n"
+            "mov %%eax, %%gs\n"
             "ljmp %2, $1f\n"
             "1:\n"
             :
-            : "m"(addr), "r"(0x10), "K"(0x08));
+            : "m"(addr), "r"(0x10), "K"(0x08)
+            : "eax");
 }
 
 

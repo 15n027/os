@@ -1,6 +1,22 @@
 all: $(OBJS) | subdirs
 
-subdirs:
+.PHONY: subdirs subdirs32 subdirs64
+
+subdirs64:
+	@for dir in $(SUBDIRS64); do \
+		if [ -d $$dir ]; then \
+			$(MAKE) -C $$dir ARCH=x86_64 || exit $$?; \
+		fi; \
+	done
+
+subdirs32:
+	@for dir in $(SUBDIRS32); do \
+		if [ -d $$dir ]; then \
+			$(MAKE) -C $$dir ARCH=i686 || exit $$?; \
+		fi; \
+	done
+
+subdirs: subdirs32 subdirs64
 	@for dir in $(SUBDIRS); do \
 		if [ -d $$dir ]; then \
 			$(MAKE) -C $$dir || exit $$?; \
@@ -16,7 +32,17 @@ $(OBJDIR)/%.o: %.s
 	@$(CC) -c -o $@ $< $(CFLAGS) $(CPPFLAGS)
 
 clean:
-	$(RM) -rf $(OBJDIRPREFIX) $(OBJS)
+	$(RM) -rf $(OBJDIRPREFIX32) $(OBJDIRPREFIX64) $(OBJS)
+	@for dir in $(SUBDIRS32); do \
+		if [ -d $$dir ]; then \
+			$(MAKE) -C $$dir clean; \
+		fi; \
+	done
+	@for dir in $(SUBDIRS64); do \
+		if [ -d $$dir ]; then \
+			$(MAKE) -C $$dir clean; \
+		fi; \
+	done
 	@for dir in $(SUBDIRS); do \
 		if [ -d $$dir ]; then \
 			$(MAKE) -C $$dir clean; \
