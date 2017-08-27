@@ -1,0 +1,45 @@
+
+ENTRY(_start)
+OUTPUT_FORMAT(elf64-x86-64)
+SECTIONS
+{
+
+        . = .;
+        _stext = .;
+        .text : {
+              *(.text*)
+              _etext = ABSOLUTE(.);
+              *(.gnu.linkonce.r.* .rodata .rodata*);
+              *(.eh_frame_hdr);
+              *(.eh_frame);
+        }
+        . = .;
+        _sctors = .;
+        .ctors : {
+              KEEP(*(.ctors));
+              KEEP(*(.ctors.*));
+              KEEP(*(.init_array));
+              KEEP(*(.preinit_array))
+              _ectors = ABSOLUTE(.);
+        }
+
+        .data ALIGN(0x1000) : {
+              *(.data*)
+              _edata = ABSOLUTE(.);
+        }
+
+        . = .;
+        _sbss = .;
+        .bss : {
+              *(.dynbss .bss .bss* COMMON .gnu.linkonce.b.*)
+              
+        }
+        _ebss = ABSOLUTE(.);
+        _bss_size = SIZEOF(.bss);
+        . = ALIGN(16);
+        .stack : {
+              . += 10240;
+              early_stack = ABSOLUTE(.);
+        }
+        _end_kernel = .;
+}

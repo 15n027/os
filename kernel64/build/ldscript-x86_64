@@ -1,34 +1,38 @@
-
 ENTRY(_start)
-OUTPUT_FORMAT(elf32-i386)
+OUTPUT_FORMAT(elf64-x86-64)
+
+PHDRS
+{
+        text PT_LOAD FILEHDR PHDRS;
+        data PT_LOAD;
+}
+
 SECTIONS
 {
-        . = 1M + SIZEOF_HEADERS;
-        _start_kernel = .;
-        .multiboot : {
-             *(.multiboot)
-        }
+        . = 0xfffffffff0000000 + SIZEOF_HEADERS;
         . = .;
         _stext = .;
         .text : {
               *(.text*)
+              _etext = ABSOLUTE(.);
               *(.gnu.linkonce.r.* .rodata .rodata*);
+        } :text
+
+        _sctors = .;
+        .ctors : {
+              KEEP(*(.ctors));
+              KEEP(*(.ctors.*));
+              KEEP(*(.init_array));
+              KEEP(*(.preinit_array))
+              _ectors = ABSOLUTE(.);
         }
-        _etext = .;
         . = ALIGN(0x1000);
-        _s_rw_area = .;
-        . = .;
-        .stack : {
-              . += 0x2000;
-              _early_stack = ABSOLUTE(.);
-        }
-        _sdata = .;
-        .data : {
+        .data ALIGN(0x1000) : {
               *(.data*)
               _edata = ABSOLUTE(.);
-        }
+        } :data
+
         . = ALIGN(64);
-        . = .;
         _sbss = .;
         .bss : {
               *(.dynbss .bss .bss* COMMON .gnu.linkonce.b.*)

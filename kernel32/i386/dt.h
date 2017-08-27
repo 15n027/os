@@ -1,32 +1,31 @@
 #pragma once
 
-#include <stdint.h>
 #include "exception.h"
+#include "basic_types.h"
 
 typedef struct {
-    uint16_t limit;
-    uint32_t base;
+    uint16 limit;
+    uint32 base;
 } __attribute__((packed)) baselimit;
 
-#define G_SHIFT (23 + 32)
-#define D_SHIFT (22 + 32)
-#define P_SHIFT (15 + 32)
-#define LIMIT2_SHIFT (16 + 32)
-#define LIMIT2_MASK 0xf000000000000ull
-#define DPL_SHIFT (13 + 32)
-#define TYPE_SHIFT (8 + 32)
-#define FLAT_LIMIT 0xfffff
-
-#define G (1ull << G_SHIFT)
-#define D (1ull << D_SHIFT)
-#define B D
-#define P (1ull << P_SHIFT)
-#define DPL(dpl) ((uint64_t)(dpl) << DPL_SHIFT)
-#define LIMIT(limit) ((limit) & 0xffff) | (((uint64_t)(limit) << LIMIT2_SHIFT) & LIMIT2_MASK)
-#define TYPE(type) ((uint64_t)(type) << TYPE_SHIFT)
-
+#define DT_G_SHIFT (23 + 32)
+#define DT_D_SHIFT (22 + 32)
+#define DT_L_SHIFT (21 + 32)
+#define DT_P_SHIFT (15 + 32)
+#define DT_DPL_SHIFT (13 + 32)
+#define DT_TYPE_SHIFT (8 + 32)
+#define DT_IST_SHIFT 32
+#define DT_LIMIT(lim) QWORD(((lim) >> 16) << 16, (lim) & 0xffff)
+#define DT_G (1ull << DT_G_SHIFT)
+#define DT_D (1ull << DT_D_SHIFT)
+#define DT_L (1ull << DT_L_SHIFT)
+#define DT_B DT_D
+#define DT_P (1ull << DT_P_SHIFT)
+#define DT_DPL(dpl) ((uint64_t)(dpl) << DT_DPL_SHIFT)
+#define DT_TYPE(type) ((uint64_t)(type) << DT_TYPE_SHIFT)
+#define DT_IST(val) (((uint64)(val)) << DT_IST_SHIFT)
 #define IDT_TARGET(x) QWORD(HIWORD(x) << 16, LOWORD(x))
-enum DTYPE {
+enum DT_TYPE {
     CS_CONFORMING_READABLE_ACCESSED = 0x1f,
     CS_CONFORMING_READABLE_NOTACCESSED = 0x1e,
     CS_CONFORMING_NOTREADABLE_ACCESSED = 0x1d,
@@ -56,5 +55,35 @@ enum DTYPE {
     TSS32_BUSY = 11,
     CALLGATE32 = 12,
     INTGATE32 = 14,
+    INTGATE64 = INTGATE32,
     TRAPGATE32 = 15,
 };
+
+#define DT_CODE_SEL(bits, dpl) (DT_IDX_CS##bits##_DPL##dpl * 8 + dpl)
+#define DT_DATA_SEL(dpl)       (DT_IDX_DS_DPL##dpl * 8 + dpl)
+#define DT_KERN64_CODE_SEL     DT_CODE_SEL(64, 0)
+#define DT_KERN32_CODE_SEL     DT_CODE_SEL(32, 0)
+#define DT_KERN_DATA_SEL       DT_DATA_SEL(0)
+#define DT_IDX_CS64_DPL0 1
+#define DT_IDX_DS_DPL0   2
+#define DT_IDX_CS32_DPL0 3
+
+
+typedef struct {
+    uint64 lo;
+    uint64 hi;
+} Gate;
+
+typedef struct PACKED() {
+    uint64 ip;
+    uint16 cs;
+} FarPtr64;
+typedef struct PACKED() {
+    uint32 ip;
+    uint16 cs;
+} FarPtr32;
+
+void farjump_to_64(uint64 rip) __attribute__((noreturn));
+void load_idt(void);
+void load_gdt(void);
+void enter_mode_ia32e(void);

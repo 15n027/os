@@ -1,7 +1,7 @@
 #ifndef EXCEPTION_H
 #define EXCEPTION_H
 
-#include <stdint.h>
+#include "basic_types.h"
 
 enum {
 #define ENTRY(x, y) EXC_ ## x,
@@ -10,33 +10,33 @@ enum {
 };
 
 typedef struct {
-    uint32_t eax;
-    uint32_t ecx;
-    uint32_t edx;
-    uint32_t ebx;
-    uint32_t esp;
-    uint32_t ebp;
-    uint32_t esi;
-    uint32_t edi;
-    uint32_t flags;
+    uint32 eax;
+    uint32 ecx;
+    uint32 edx;
+    uint32 ebx;
+    uint32 esp;
+    uint32 ebp;
+    uint32 esi;
+    uint32 edi;
+    uint32 flags;
 } Regs32;
 
 typedef struct {
-    uint32_t edi;
-    uint32_t esi;
-    uint32_t ebp;
-    uint32_t edx;
-    uint32_t ecx;
-    uint32_t ebx;
-    uint32_t eax;
-    uint32_t vector_idx;
-    uint32_t errcode;
-    uint32_t eip;
-    uint32_t cs;
-    uint32_t flags;
+    uint32 edi;
+    uint32 esi;
+    uint32 ebp;
+    uint32 edx;
+    uint32 ecx;
+    uint32 ebx;
+    uint32 eax;
+    uint64 vector;
+    uint64 errcode;
+    uint64 eip;
+    uint64 cs;
+    uint64 eflags;
     /* If privilege change */
-    uint32_t esp;
-    uint32_t ss;
+    uint64 esp;
+    uint64 ss;
 } IntrFrame;
 
 #endif

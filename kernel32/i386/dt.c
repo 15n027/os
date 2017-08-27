@@ -1,26 +1,25 @@
 #include <stdint.h>
 #include "debug.h"
-#include "startup.h"
 #include "exception.h"
 #include "dt.h"
+#include "paging.h"
+#include "x86_defs.h"
+#include "kernel.h"
+#include "msr.h"
 
-void load_gdt(void)
+static uint64 gdt[] = {
+    [1] = DT_G | DT_L | DT_P | DT_DPL(0) |
+          DT_TYPE(CS_NONCONFORMING_READABLE_NOTACCESSED) | DT_LIMIT(0xfffff),
+    [2] = DT_G | DT_D | DT_P | DT_DPL(0) | DT_LIMIT(0xfffff) |
+          DT_TYPE(DS_EXUP_WRITEABLE_NOTACCESSED),
+    [3] = DT_G | DT_D | DT_P | DT_DPL(0) | DT_LIMIT(0xfffff) |
+          DT_TYPE(CS_NONCONFORMING_READABLE_NOTACCESSED),
+};
+
+void
+load_gdt(void)
 {
     baselimit addr;
-    static uint64_t gdt[] __attribute__((aligned(0x1000))) = {
-        [1] = G | D | P | LIMIT(FLAT_LIMIT) |
-              DPL(0) |
-              TYPE(CS_NONCONFORMING_READABLE_ACCESSED),
-        [2] = G | B | P | LIMIT(FLAT_LIMIT) |
-              DPL(0) |
-              TYPE(DS_EXUP_WRITEABLE_ACCESSED),
-        [3] = G | D | P | LIMIT(FLAT_LIMIT) |
-              DPL(3) |
-              TYPE(CS_NONCONFORMING_READABLE_ACCESSED),
-        [4] = G | B | P | LIMIT(FLAT_LIMIT) |
-              DPL(3) |
-              TYPE(DS_EXUP_WRITEABLE_ACCESSED)
-    };
     DBG("");
     addr.limit = sizeof(gdt) - 1;
     addr.base = (uintptr_t)&gdt[0];
@@ -34,25 +33,44 @@ void load_gdt(void)
             "ljmp %2, $1f\n"
             "1:\n"
             :
-            : "m"(addr), "r"(0x10), "K"(0x08)
+            : "m"(addr), "r"(DT_KERN_DATA_SEL), "K"(DT_KERN32_CODE_SEL)
             : "eax");
 }
 
 
-extern void init_idt_entries(uint64_t idt[256]);
-void load_idt(void)
+extern void init_idt_entries(Gate idt[static 256]);
+void
+load_idt(void)
 {
     baselimit idtr;
-    static uint64_t idt[256] __attribute__((aligned(0x1000)));
+    static Gate idt[256] __attribute__((aligned(0x1000)));
 
     init_idt_entries(idt);
-    idtr.base = (uintptr_t)&idt[0];
+    idtr.base = PTR_TO_VA(idt);
     idtr.limit = sizeof(idt) - 1;
     asm volatile ("lidt %0\n"
             :
             : "m" (idtr));
 }
 
-TEXT_SET(sys_startup, load_gdt);
-TEXT_SET(sys_startup, load_idt);
+void
+enter_mode_ia32e(void)
+{
+    init_4level_pagetable();
+    SET_EFER(GET_EFER() | EFER_NXE | EFER_LME | EFER_LMA);
+    enable_paging(get_paging_root());
+}
 
+void farjump_to_64(uint64 entry)
+{
+    extern const char in64Bit[];
+    FarPtr32 fptr = {.cs = DT_KERN64_CODE_SEL, .ip = PTR_TO_VA(in64Bit)};
+    asm volatile("ljmp *%0\n"
+        ".globl in64Bit\n"
+        "in64Bit:\n"
+        ".code64\n"
+        "jmp *%1\n"
+        ".code32\n"
+            : : "m"(fptr), "m"(entry));
+    NOT_REACHED();
+}

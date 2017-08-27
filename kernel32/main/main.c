@@ -2,46 +2,86 @@
 #include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "debug.h"
-#include "startup.h"
+
 #include "kassert.h"
 #include "i386/cpuid.h"
+#include "loader.h"
 #include "multiboot/multiboot.h"
-
-SET_DEFINE(sys_startup, sys_startup_fn);
+#include "pagealloc.h"
+#include "kernel.h"
+#include "basic_types.h"
+#include "x86_defs.h"
+#include "i386/paging.h"
+#include "i386/dt.h"
 
 void earlyconsole_init(void);
 
 static void
-print_mmap(multiboot_info_t *mbi)
+init_phys_map(multiboot_info_t *mbi)
 {
     multiboot_memory_map_t *mmap;
+
+    ASSERT_ON_COMPILE(sizeof *mbi <= PAGE_SIZE);
     if (mbi->flags & MULTIBOOT_INFO_MEM_MAP) {
-        printf("mmap_len=%d addr=%x\n", mbi->mmap_length, mbi->mmap_addr);
         mmap=(multiboot_memory_map_t*)(uintptr_t)mbi->mmap_addr;
-        while ((uintptr_t)mmap + sizeof(*mmap) < mbi->mmap_addr + mbi->mmap_length) {
-            printf("addr: [ %08llx - %08llx ] RAM: %s\n",
-                    mmap->addr, mmap->addr + mmap->len, mmap->type == 1 ? "YES" : "NO");
+        while ((uintptr_t)mmap + sizeof(*mmap) <= mbi->mmap_addr + mbi->mmap_length) {
+            printf("[%08llx - %08llx ] RAM:%d\n",
+                    mmap->addr, mmap->addr + mmap->len, (mmap->type == MULTIBOOT_MEMORY_AVAILABLE) ? 1 : 0);
+            mark_phys_range(mmap->addr, mmap->len, mmap->type == MULTIBOOT_MEMORY_AVAILABLE);
             mmap = (multiboot_memory_map_t*)((uintptr_t)mmap + mmap->size + sizeof(mmap->size));
         }
     }
+    mark_phys_range(PTR_TO_PA(mbi), sizeof *mbi, FALSE);
+    if (mbi->flags & MULTIBOOT_INFO_MODS) {
+        multiboot_module_t *mods = (void*)mbi->mods_addr;
+        mark_phys_range(mbi->mods_addr, mbi->mods_count * sizeof *mods, FALSE);
+        for (uint32 i = 0; i < mbi->mods_count; i++) {
+            mark_phys_range(mods[i].cmdline, strlen((char*)mods[i].cmdline) + 1, FALSE);
+            mark_phys_range(mods[i].mod_start, mods[i].mod_end - mods[i].mod_start, FALSE);
+        }
+    }
+    mark_phys_range(0, PAGE_SIZE, FALSE);
+    mark_phys_range(START_KERNEL, END_KERNEL - START_KERNEL, FALSE);
+    mark_phys_range(0xb8000, PAGE_SIZE, FALSE);
+    complete_phys_map();
+    print_phys_map();
 }
 
 
 void kern_entry(uint32_t mbsig, multiboot_info_t *mbi)
 {
-    sys_startup_fn *sys_startup_func;
     earlyconsole_init();
-    SET_FOREACH(sys_startup, sys_startup_func) {
-         (*sys_startup_func)();
+    if (mbsig != MULTIBOOT_BOOTLOADER_MAGIC) {
+        printf("32->64 loader wasn't loaded via multiboot.\n");
+        HALT();
     }
-    ASSERT(cpuid_isset(LM));
-    ASSERT(cpuid_isset(NX));
+    if (!cpuid_isset(LM) || !cpuid_isset(NX)) {
+        printf("LM or NX are unsupported\n");
+        HALT();
+    }
+    init_phys_map(mbi);
     printf("mbsig=0x%x mbi=%p\n", mbsig, mbi);
     printf("flags=0x%x mem_lower=0x%x mem_upper=0x%x boot=0x%x\n",
             mbi->flags, mbi->mem_lower, mbi->mem_upper, mbi->boot_device);
-    print_mmap(mbi);
-    printf("CLI;HLT");
-    fflush(0);
-    for(;;) asm("cli;hlt");
+    printf("bootloadername=%s\n", (char*)mbi->boot_loader_name);
+    load_gdt();
+    load_idt();
+    enter_mode_ia32e();
+    map_pages(PTR_TO_VA(mbi), PTR_TO_VA(mbi),
+            PAGES_SPANNED(PTR_TO_VA(mbi), PTR_TO_VA(mbi) + sizeof *mbi), PT_P | PT_NX);
+    if (mbi->flags & MULTIBOOT_INFO_MODS) {
+        multiboot_module_t *mods = (void*)mbi->mods_addr;
+        printf("MB mods count=%u addr=%p\n", mbi->mods_count, mods);
+        for (uint32 i = 0; i < mbi->mods_count; i++) {
+            uint64 entry;
+            map_page(mods[i].cmdline, mods[i].cmdline, PT_P | PT_NX);
+            map_pages(mods[i].mod_start, mods[i].mod_start,
+                    PAGES_SPANNED(mods[i].mod_start, mods[i].mod_end), PT_P | PT_NX);
+            entry = load_module(PA_TO_PTR(mods[i].cmdline), PA_TO_PTR(mods[i].mod_start),
+                    mods[i].mod_end - mods[i].mod_start);
+            ASSERT(entry != 0);
+            farjump_to_64(entry);
+        }
+    }
+    HALT();
 }
