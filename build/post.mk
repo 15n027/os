@@ -32,15 +32,15 @@ $(OBJDIR)/%.o: %.s
 	@$(CC) -c -o $@ $< $(CFLAGS) $(CPPFLAGS)
 
 clean:
-	$(RM) -rf $(OBJDIRPREFIX32) $(OBJDIRPREFIX64) $(OBJS)
+	$(RM) -rf $(abspath $(OBJTOPDIR)) $(OBJS)
 	@for dir in $(SUBDIRS32); do \
 		if [ -d $$dir ]; then \
-			$(MAKE) -C $$dir clean; \
+			$(MAKE) -C $$dir ARCH=i686 clean; \
 		fi; \
 	done
 	@for dir in $(SUBDIRS64); do \
 		if [ -d $$dir ]; then \
-			$(MAKE) -C $$dir clean; \
+			$(MAKE) -C $$dir ARCH=x86_64 clean; \
 		fi; \
 	done
 	@for dir in $(SUBDIRS); do \

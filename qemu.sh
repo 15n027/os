@@ -1,6 +1,6 @@
 #!/bin/bash
 QEMU=/home/jwhite/qemu/bin/qemu-system-x86_64
-QEMU=/home/jwhite/qemu/bin/qemu-system-i386
+#QEMU=/home/jwhite/qemu/bin/qemu-system-i386
 TFTPDIR=~/os/tftp
 #PXEROM=~/ipxe/src/bin/808610ea.rom
 #ISO=~/ipxe/src/bin/ipxe.iso
@@ -11,10 +11,11 @@ fi
 $QEMU \
     -machine q35 \
     -cdrom $ISO \
-    -cpu max \
     -boot d \
-    -m 64 \
+    -m 7168 \
     -enable-kvm \
+    -monitor /dev/stdout \
     -display sdl  $DBG
 #    -netdev user,id=bort,ipv4=on,net=172.16.0.0/16,dhcpstart=172.16.1.1,tftp=$TFTPDIR,bootfile=default \
 #    -device virtio-net,netdev=bort,mac=52:54:00:12:aa:bb
+reset

@@ -1,0 +1,12 @@
+file obj/targets/kernel64.elf
+#set architecture i386:x64-32
+set architecture i386:x86-64
+target remote :1234
+#hb enable_pae_paging
+hb __kernel_write
+set disassemble-next-line on
+#hb farjump_to_64
+#hb pool_add
+#hb _start
+c
+
