@@ -4,7 +4,6 @@
 #include <ctype.h>
 #include <stdint.h>
 #include <stdio.h>
-#include "startup.h"
 #include "basic_defs.h"
 #include "kassert.h"
 #include "debug.h"

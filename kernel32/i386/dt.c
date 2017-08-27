@@ -65,7 +65,8 @@ void farjump_to_64(uint64 entry)
 {
     extern const char in64Bit[];
     FarPtr32 fptr = {.cs = DT_KERN64_CODE_SEL, .ip = PTR_TO_VA(in64Bit)};
-    asm volatile("ljmp *%0\n"
+    asm volatile(
+        "ljmp *%0\n"
         ".globl in64Bit\n"
         "in64Bit:\n"
         ".code64\n"

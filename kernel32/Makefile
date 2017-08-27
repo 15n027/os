@@ -8,7 +8,7 @@ SRCS := multiboot/multiboot.c \
 	i386/cpuid.c i386/paging.c
 
 CFLAGS += -Werror
-CPPFLAGS += -I. -Iinclude
+CPPFLAGS += -I. -Iinclude -I../include
 LDSCRIPT := build/ldscript-$(ARCH)
 LDFLAGS += -T $(LDSCRIPT)
 LDLIBS := -lc $(LIBGCC)
@@ -19,12 +19,10 @@ include $(TOPDIR)/build/pre-targets.mk
 all: $(TARGETDIR)/$(KERNEL)
 
 $(OBJDIR)/$(KERNEL): $(OBJS) $(LDSCRIPT)
-	$(LD) -o $@ $(OBJS) $(LDFLAGS) $(LDLIBS)
+	@$(LD) -o $@ $(OBJS) $(LDFLAGS) $(LDLIBS)
 	grub-file --is-x86-multiboot $@
 
 $(TARGETDIR)/$(KERNEL): $(OBJDIR)/$(KERNEL)
 	@$(INSTALLTARGET) $<
-
-$(OBJS): i386/cpuid-entry.h
 
 include $(TOPDIR)/build/post.mk

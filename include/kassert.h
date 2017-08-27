@@ -1,8 +1,7 @@
 #pragma once
-#include <stdbool.h>
+
 #include <stdio.h>
 #include "debug.h"
-#include "basic_defs.h"
 
 #define ASSERT_ON_COMPILE1(x) x
 #define ASSERT_ON_COMPILE(cond) ((void)sizeof(char[(cond) ? 1 : -1]))

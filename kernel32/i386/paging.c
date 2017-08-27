@@ -111,7 +111,7 @@ map_page_with_root(VA vRoot, VA64 vBase, PA pBase, uint64 flags)
     ASSERT(IS_ALIGNED(vRoot, PAGE_SIZE));
     vBase = ALIGN(vBase, PAGE_SIZE);
     pBase = ALIGN(pBase, PAGE_SIZE);
-    printf("%s: va=%llx pa=%llx\n", __func__, vBase, pBase);
+
     for (lvl = 4; lvl > 1; lvl--) {
         scratch = map_scratch(map);
         cur = &scratch[PML_OFF(vBase, lvl)];
@@ -128,9 +128,6 @@ map_page_with_root(VA vRoot, VA64 vBase, PA pBase, uint64 flags)
             map = PT_ENTRY_TO_PA(*cur);
         }
     }
-    if (0)
-    printf("map page %08llx -> %08llx @%p\n",
-            pBase, vBase, &scratch[PML1_OFF(vBase)]);
     scratch = map_scratch(map);
     scratch[PML1_OFF(vBase)] = PT_ADDR_4K(pBase) | flags;
     scratch[PML1_OFF(vBase)] = PT_ADDR_4K(pBase) | flags;
