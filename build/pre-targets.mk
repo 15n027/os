@@ -1,5 +1,5 @@
 CSRCS := $(filter %.c, $(SRCS))
-ASMSRCS := $(filter %.s, $(SRCS))
+ASMSRCS := $(filter %.s, $(SRCS)) $(filter %.S, $(SRCS))
 
 OBJS := $(addprefix $(OBJDIR)/, $(CSRCS:.c=.o)) \
-	$(addprefix $(OBJDIR)/, $(ASMSRCS:.s=.o))
+	$(addprefix $(OBJDIR)/, $(addsuffix .o, $(basename $(ASMSRCS))))

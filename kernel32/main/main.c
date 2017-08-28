@@ -4,15 +4,15 @@
 #include <stdlib.h>
 
 #include "kassert.h"
-#include "i386/cpuid.h"
+#include "x86/cpuid.h"
 #include "loader.h"
 #include "multiboot/multiboot.h"
 #include "pagealloc.h"
 #include "kernel.h"
 #include "basic_types.h"
-#include "x86_defs.h"
-#include "i386/paging.h"
-#include "i386/dt.h"
+#include "x86/x86_defs.h"
+#include "x86/paging.h"
+#include "x86/dt.h"
 
 void earlyconsole_init(void);
 
@@ -25,8 +25,8 @@ init_phys_map(multiboot_info_t *mbi)
     if (mbi->flags & MULTIBOOT_INFO_MEM_MAP) {
         mmap=(multiboot_memory_map_t*)(uintptr_t)mbi->mmap_addr;
         while ((uintptr_t)mmap + sizeof(*mmap) <= mbi->mmap_addr + mbi->mmap_length) {
-            printf("[%08llx - %08llx ] RAM:%d\n",
-                    mmap->addr, mmap->addr + mmap->len, (mmap->type == MULTIBOOT_MEMORY_AVAILABLE) ? 1 : 0);
+            printf("[%08llx - %08llx ] RAM:%d(%d)\n",
+                    mmap->addr, mmap->addr + mmap->len, (mmap->type == MULTIBOOT_MEMORY_AVAILABLE) ? 1 : 0, mmap->type);
             mark_phys_range(mmap->addr, mmap->len, mmap->type == MULTIBOOT_MEMORY_AVAILABLE);
             mmap = (multiboot_memory_map_t*)((uintptr_t)mmap + mmap->size + sizeof(mmap->size));
         }
@@ -67,6 +67,15 @@ void kern_entry(uint32_t mbsig, multiboot_info_t *mbi)
     load_gdt();
     load_idt();
     enter_mode_ia32e();
+    asm volatile("int3");
+    asm("pushf\n"
+        "push %0\n"
+        "popf\n"
+        "into\n"
+        "popf\n"
+            : : "g"(EFLAGS_OF | 2));
+
+    printf("survived interrupt\n");
     map_pages(PTR_TO_VA(mbi), PTR_TO_VA(mbi),
             PAGES_SPANNED(PTR_TO_VA(mbi), PTR_TO_VA(mbi) + sizeof *mbi), PT_P | PT_NX);
     if (mbi->flags & MULTIBOOT_INFO_MODS) {

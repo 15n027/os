@@ -2,7 +2,7 @@
 #include <stdbool.h>
 #include "basic_defs.h"
 #include "kassert.h"
-#include "cpuid.h"
+#include "x86/cpuid.h"
 
 typedef struct {
     const char *name;
@@ -19,7 +19,7 @@ typedef struct {
 
 
 static const CpuidDescriptor cpuidLookupInfo[] = {
-#include "cpuid-entry.h"
+#include "x86/cpuid-entry.h"
 };
 #undef CPUID
 

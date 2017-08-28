@@ -1,21 +1,24 @@
-#!/bin/sh
+#!/bin/bash
 
 VERBOSE=$1
 shift
 
 FILENAME=
-for arg in "$@"; do
+args=( "$@" )
+
+for i in $(seq ${#args[*]}); do
+    arg="${args[$i]}"
     case "$arg" in
         *.c)
             MSG="Compiling $arg"
             ;;
-        *.s)
+        *.[Ss])
             MSG="Assembling $arg"
             ;;
         *.elf)
             MSG="Linking $arg"
             ;;
-        *.o)
+        *.[od])
             mkdir -p `dirname "$arg"`
             ;;
         *)
@@ -23,10 +26,9 @@ for arg in "$@"; do
     esac
 done
 
-if [ $VERBOSE -eq 0 ]; then
+if [ $VERBOSE -eq 1 ]; then
     echo $MSG
-    "$@" > /dev/null
-else
+elif [ $VERBOSE -gt 1 ]; then
     echo "$@"
-    "$@"
 fi
+"$@"

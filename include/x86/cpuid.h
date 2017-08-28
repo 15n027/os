@@ -5,7 +5,7 @@
 #define CPUID(name, eax, ecx, reg, bit, length) \
     name,
 enum CpuidItem {
-#include "cpuid-entry.h"
+#include "x86/cpuid-entry.h"
 CPUID_ITEM_MAX
 };
 

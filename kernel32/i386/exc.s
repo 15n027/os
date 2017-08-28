@@ -7,19 +7,16 @@
   <vector>
   <pusha>
 */
-.align 1
+
 .globl idt_common_asm
 
-
-/* Far pointer for 64->32 transistion */
-.long 0xffffffff
-.long exc32Entry
-.short 0x18
-
-idt_common_asm:
 .code64
-        ljmp *-12(%rip)
+.type idt_common_asm, @function
+idt_common_asm:
+     ljmp *trampoline_64_32(%rip)
+
 .code32
+.type exc32Entry, @function
 exc32Entry:
      push %eax
      push %ebx
@@ -29,6 +26,7 @@ exc32Entry:
      push %esi
      push %edi
      push %esp /* IntrFrame *frame */
+     cld
      call idt_common
      add $4, %esp
      pop %edi
@@ -38,7 +36,18 @@ exc32Entry:
      pop %ecx
      pop %ebx
      pop %eax
-     add $8, %esp
-     iret
+     add $16, %esp
+     ljmp *trampoline_32_64
+do_iret:
+.code64
+     iretq
 
+.section .rodata
 
+trampoline_32_64:
+.long do_iret
+.short 0x8
+
+trampoline_64_32:
+.long exc32Entry
+.short 0x18

@@ -4,7 +4,7 @@
 #include "basic_types.h"
 
 enum {
-#define ENTRY(x, y) EXC_ ## x,
+#define ENTRY(name, num, type, err) EXC_ ## name = num,
 #include "idt-table.h"
 #undef ENTRY
 };

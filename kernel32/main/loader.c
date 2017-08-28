@@ -4,7 +4,7 @@
 #include "loader.h"
 #include "basic_types.h"
 #include "pagealloc.h"
-#include "i386/paging.h"
+#include "x86/paging.h"
 #include "elf.h"
 
 

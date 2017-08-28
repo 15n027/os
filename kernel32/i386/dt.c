@@ -1,11 +1,11 @@
 #include <stdint.h>
 #include "debug.h"
-#include "exception.h"
-#include "dt.h"
-#include "paging.h"
-#include "x86_defs.h"
+#include "x86/exception.h"
+#include "x86/dt.h"
+#include "x86/paging.h"
+#include "x86/x86_defs.h"
 #include "kernel.h"
-#include "msr.h"
+#include "x86/msr.h"
 
 static uint64 gdt[] = {
     [1] = DT_G | DT_L | DT_P | DT_DPL(0) |

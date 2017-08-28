@@ -20,7 +20,7 @@ SECTIONS
         . = .;
         .stack : {
               . += 0x2000;
-              _early_stack = ABSOLUTE(.);
+              _stack_top = ABSOLUTE(.);
         }
         _sdata = .;
         .data : {

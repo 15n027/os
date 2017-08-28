@@ -3,6 +3,10 @@
 enum RegName {
     EAX,
     ECX,
+    EDX,
     EBX,
-    EDX
+    ESP,
+    EBP,
+    ESI,
+    EDI,
 };

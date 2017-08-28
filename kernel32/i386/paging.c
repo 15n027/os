@@ -1,8 +1,7 @@
 #include <string.h>
-#include "paging.h"
 #include "basic_types.h"
-#include "x86_defs.h"
-#include "msr.h"
+#include "x86/paging.h"
+#include "x86/x86_defs.h"
 #include "kernel.h"
 #include "pagealloc.h"
 
@@ -99,40 +98,6 @@ map_scratch(PA pa)
     }
 }
 
-void
-map_page_with_root(VA vRoot, VA64 vBase, PA pBase, uint64 flags)
-{
-    PA map = vRoot;
-    PTE *cur;
-    PA page;
-    uint32 lvl;
-    uint64 *scratch;
-    ASSERT(pBase != 0);
-    ASSERT(IS_ALIGNED(vRoot, PAGE_SIZE));
-    vBase = ALIGN(vBase, PAGE_SIZE);
-    pBase = ALIGN(pBase, PAGE_SIZE);
-
-    for (lvl = 4; lvl > 1; lvl--) {
-        scratch = map_scratch(map);
-        cur = &scratch[PML_OFF(vBase, lvl)];
-        if ((*cur & PT_P) == 0) {
-            page = alloc_phys_page();
-            printf("alloc PT%u page %p\n", lvl, PA_TO_PTR(page));
-            ASSERT(page != INVALID_PA);
-            scratch = map_scratch(page);
-            memset(scratch, 0, PAGE_SIZE);
-            scratch = map_scratch(map);
-            *cur = PT_ADDR_4K(page) | PT_P | PT_RW;
-            map = page;
-        } else {
-            map = PT_ENTRY_TO_PA(*cur);
-        }
-    }
-    scratch = map_scratch(map);
-    scratch[PML1_OFF(vBase)] = PT_ADDR_4K(pBase) | flags;
-    scratch[PML1_OFF(vBase)] = PT_ADDR_4K(pBase) | flags;
-}
-
 PA
 pt_entry_to_pa(PTE entry)
 {
@@ -147,6 +112,43 @@ pt_entry_to_pa(PTE entry)
 }
 
 void
+map_page_with_root(VA vRoot, VA64 vBase, PA pBase, uint64 flags)
+{
+    PA map = vRoot;
+    uint32 lvl;
+    uint64 *scratch;
+
+    ASSERT(pBase != 0);
+    ASSERT(IS_ALIGNED(vRoot, PAGE_SIZE));
+    vBase = ALIGN(vBase, PAGE_SIZE);
+    pBase = ALIGN(pBase, PAGE_SIZE);
+
+    for (lvl = 4; lvl > 1; lvl--) {
+        PTE *cur;
+        scratch = map_scratch(map);
+        cur = &scratch[PML_OFF(vBase, lvl)];
+        if ((*cur & PT_P) == 0) {
+            PA newpage = alloc_phys_page();
+            printf("alloc PT%u page %p\n", lvl, PA_TO_PTR(newpage));
+            ASSERT(newpage != INVALID_PA);
+            scratch = map_scratch(newpage);
+            memset(scratch, 0, PAGE_SIZE);
+            scratch = map_scratch(map);
+            *cur = PT_ADDR_4K(newpage) | PT_P | PT_RW;
+            map = newpage;
+            invtlb();
+        } else {
+            ASSERT((*cur & PT_PS) == 0);
+            map = PT_ENTRY_TO_PA(*cur);
+        }
+    }
+    scratch = map_scratch(map);
+    scratch[PML1_OFF(vBase)] = PT_ADDR_4K(pBase) | flags;
+
+    invpage(VA_TO_PTR(vBase));
+}
+
+void
 map_pages_with_root(VA vRoot, VA64 vBase, PA pBase, uint32 numPages, uint64 flags)
 {
     uint32 i;
@@ -154,19 +156,16 @@ map_pages_with_root(VA vRoot, VA64 vBase, PA pBase, uint32 numPages, uint64 flag
     for (i = 0; i < numPages; i++) {
         map_page_with_root(vRoot, vBase + i * PAGE_SIZE, pBase + i * PAGE_SIZE, flags);
     }
-    invtlb();
 }
 
 void
 map_pages(VA vBase, PA pBase, uint32 numPages, uint64 flags)
 {
     map_pages_with_root(get_paging_root(), vBase, pBase, numPages, flags);
-    invtlb();
 }
 
 void
 map_page(VA vBase, PA pBase, uint64 flags)
 {
     map_pages_with_root(get_paging_root(), vBase, pBase, 1, flags);
-    invpage(VA_TO_PTR(vBase));
 }

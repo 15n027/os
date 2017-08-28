@@ -16,7 +16,6 @@ TOOLCHAINLIBDIR := $(TOPDIR)/toolchain/installed/lib
 
 CC := $(TOPDIR)/build/cc.sh $(VERBOSE) $(PFX)gcc
 CROSS_GCC := $(CC)
-#CC := $(PFX)gcc
 LD := $(PFX)ld
 STRIP := $(PFX)strip
 AR := $(PFX)ar
@@ -40,15 +39,25 @@ INSTALL := $(TOPDIR)/build/install.sh $(VERBOSE) $(OBJDIRPREFIX)/..
 INSTALLLIB := $(INSTALL) $(LIBDIR)
 INSTALLTARGET := $(INSTALL) $(TARGETDIR)
 
-OPT := -fno-omit-frame-pointer -O2
-DEBUG :=  -g -ggdb -g3 -DINCLUDE_ASSERTS
-DEBUG :=
-CFLAGS := -Wall -std=gnu99 -mno-sse -mno-mmx -nostdlib -nostdinc $(OPT) $(DEBUG) -static \
-	-Wstack-usage=0
+DEBUG ?= 1
+#-ftrapv
+# -finstrument-functions
+CFLAGS := -Wall -std=gnu99 -mno-sse -mno-mmx -nostdlib -nostdinc -static \
+	-Wstack-usage=0 -ffreestanding -fbuiltin
 CPPFLAGS := -I $(OBJDIRPREFIX)/include
 LDFLAGS := -L $(LIBDIR) -nostdlib -static $(LIBGCC)
 
+ifeq ($(DEBUG), 0)
+CFLAGS += -fomit-frame-pointer -Os
+else
+CFLAGS +=  -g -ggdb -g3 -DINCLUDE_ASSERTS -fverbose-asm
+CFLAGS += -fno-omit-frame-pointer -O
+endif
+
 ifeq ($(ARCH), x86_64)
 	CFLAGS += -mno-red-zone -mcmodel=large
+	CFLAGS += -DARCH_BITS=64
+else
+	CFLAGS += -DARCH_BITS=32
 endif
 

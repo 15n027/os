@@ -25,11 +25,19 @@ subdirs: subdirs32 subdirs64
 
 $(OBJS): Makefile $(TOPDIR)/build/defs.mk $(TOPDIR)/build/post.mk $(TOPDIR)/build/pre-targets.mk | subdirs
 
-$(OBJDIR)/%.o: %.c
+$(DEPDIR)/%.d: ;
+
+$(OBJDIR)/%.o: %.c $(OBJDIR)/%.o.d
+	@$(CC) -c -o $@ $< $(CFLAGS) $(CPPFLAGS) -MMD
+
+$(OBJDIR)/%.o: %.s $(DEPDIR)/%.o.d
 	@$(CC) -c -o $@ $< $(CFLAGS) $(CPPFLAGS)
 
-$(OBJDIR)/%.o: %.s
+$(OBJDIR)/%.o: %.S $(DEPDIR)/%.o.d
 	@$(CC) -c -o $@ $< $(CFLAGS) $(CPPFLAGS)
+
+DEPFILES = $(shell find $(OBJDIR) -name "*.d" 2> /dev/null)
+-include $(DEPFILES)
 
 clean:
 	$(RM) -rf $(abspath $(OBJTOPDIR)) $(OBJS)

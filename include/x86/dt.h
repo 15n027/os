@@ -74,11 +74,11 @@ typedef struct {
     uint64 hi;
 } Gate;
 
-typedef struct PACKED() {
+typedef struct PACKED {
     uint64 ip;
     uint16 cs;
 } FarPtr64;
-typedef struct PACKED() {
+typedef struct PACKED {
     uint32 ip;
     uint16 cs;
 } FarPtr32;

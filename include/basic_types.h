@@ -23,7 +23,12 @@ typedef uint64 VA64;
 #define INVALID_PA (0xffffffffffffbeefull)
 #define PTR_TO_VA(ptr) ((VA)(ptr))
 #define PTR_TO_PA(ptr) ((PA)(uintptr_t)(ptr))
+#if ARCH_BITS == 32
 #define PA_TO_PTR(pa) ({ASSERT((pa) < 4 * GB); ((void*)(uintptr_t)(pa));})
+#else
+#define PA_TO_PTR(pa) ((void*)(uintptr_t)(pa))
+#endif
+
 #define VA_TO_PTR(va) ((void*)(uintptr_t)(va))
 
 #define TRUE true

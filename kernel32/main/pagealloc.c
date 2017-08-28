@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include "pagealloc.h"
 #include "basic_defs.h"
-#include "x86_defs.h"
+#include "x86/x86_defs.h"
 #include "kassert.h"
 #include <limits.h>
 
