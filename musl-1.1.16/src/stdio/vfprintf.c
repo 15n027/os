@@ -469,8 +469,8 @@ static int printf_core(FILE *f, const char *fmt, va_list *ap, union arg *nl_arg,
 	char buf[sizeof(uintmax_t)*3+3+LDBL_MANT_DIG/4];
 	const char *prefix;
 	int t, pl;
-	wchar_t wc[2], *ws;
-	char mb[4];
+	//wchar_t wc[2], *ws;
+    //	char mb[4];
 
 	for (;;) {
 		/* This error is only specified for snprintf, but since it's
@@ -616,8 +616,10 @@ static int printf_core(FILE *f, const char *fmt, va_list *ap, union arg *nl_arg,
 			*(a=z-(p=1))=arg.i;
 			fl &= ~ZERO_PAD;
 			break;
+#if 0
 		case 'm':
 			if (1) a = strerror(errno); else
+#endif
 		case 's':
 			a = arg.p ? arg.p : "(null)";
 			z = a + strnlen(a, p<0 ? INT_MAX : p);
@@ -625,6 +627,7 @@ static int printf_core(FILE *f, const char *fmt, va_list *ap, union arg *nl_arg,
 			p = z-a;
 			fl &= ~ZERO_PAD;
 			break;
+#if 0
 		case 'C':
 			wc[0] = arg.i;
 			wc[1] = 0;
@@ -643,6 +646,7 @@ static int printf_core(FILE *f, const char *fmt, va_list *ap, union arg *nl_arg,
 			pad(f, ' ', w, p, fl^LEFT_ADJ);
 			l = w>p ? w : p;
 			continue;
+#endif
 #if 0
 		case 'e': case 'f': case 'g': case 'a':
 		case 'E': case 'F': case 'G': case 'A':
@@ -678,10 +682,10 @@ static int printf_core(FILE *f, const char *fmt, va_list *ap, union arg *nl_arg,
 	return 1;
 
 inval:
-	errno = EINVAL;
+    //	errno = EINVAL;
 	return -1;
 overflow:
-	errno = EOVERFLOW;
+    //	errno = EOVERFLOW;
 	return -1;
 }
 

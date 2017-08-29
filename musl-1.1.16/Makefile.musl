@@ -18,7 +18,7 @@ includedir = $(prefix)/include
 libdir = $(prefix)/lib
 syslibdir = /lib
 
-SRC_DIRS = $(addprefix $(srcdir)/,src/* crt ldso)
+SRC_DIRS = $(addprefix $(srcdir)/,src/*)
 BASE_GLOBS = $(addsuffix /*.c,$(SRC_DIRS))
 ARCH_GLOBS = $(addsuffix /$(ARCH)/*.[csS],$(SRC_DIRS))
 BASE_SRCS = $(sort $(wildcard $(BASE_GLOBS)))
@@ -29,9 +29,6 @@ REPLACED_OBJS = $(sort $(subst /$(ARCH)/,/,$(ARCH_OBJS)))
 ALL_OBJS = $(addprefix $(OBJDIR)/, $(filter-out $(REPLACED_OBJS), $(sort $(BASE_OBJS) $(ARCH_OBJS))))
 
 LIBC_OBJS = $(filter $(OBJDIR)/src/%,$(ALL_OBJS))
-LDSO_OBJS = $(filter $(OBJDIR)/ldso/%,$(ALL_OBJS:%.o=%.lo))
-CRT_OBJS = $(filter $(OBJDIR)/crt/%,$(ALL_OBJS))
-
 AOBJS = $(LIBC_OBJS)
 LOBJS = $(LIBC_OBJS:.o=.lo)
 GENH = $(OBJDIR)/include/bits/alltypes.h $(OBJDIR)/include/bits/syscall.h
@@ -61,19 +58,16 @@ GENERIC_INCLUDES = $(wildcard $(srcdir)/arch/generic/bits/*.h)
 INCLUDES = $(wildcard $(srcdir)/include/*.h $(srcdir)/include/*/*.h)
 ALL_INCLUDES = $(sort $(INCLUDES:$(srcdir)/%=%) $(GENH:$(OBJDIR)/%=%) $(ARCH_INCLUDES:$(srcdir)/arch/$(ARCH)/%=include/%) $(GENERIC_INCLUDES:$(srcdir)/arch/generic/%=include/%))
 
-EMPTY_LIB_NAMES = m rt pthread crypt util xnet resolv dl
+EMPTY_LIB_NAMES = m rt crypt util
 EMPTY_LIBS = $(EMPTY_LIB_NAMES:%=$(LIBDIR)/lib%.a)
-CRT_LIBS = $(addprefix $(LIBDIR)/,$(notdir $(CRT_OBJS)))
 STATIC_LIBS = $(LIBDIR)/libc.a
 SHARED_LIBS = $(LIBDIR)/libc.so
 TOOL_LIBS = $(LIBDIR)/musl-gcc.specs
-ALL_LIBS = $(CRT_LIBS) $(STATIC_LIBS) $(SHARED_LIBS) $(EMPTY_LIBS) $(TOOL_LIBS)
+ALL_LIBS = $(STATIC_LIBS) $(EMPTY_LIBS) $(TOOL_LIBS)
 ALL_TOOLS = $(OBJDIR)/musl-gcc
 
 WRAPCC_GCC = gcc
 WRAPCC_CLANG = clang
-
-LDSO_PATHNAME = $(syslibdir)/ld-musl-$(ARCH)$(SUBARCH).so.1
 
 -include $(OBJDIR)/config.mak
 
@@ -106,36 +100,11 @@ $(OBJDIR)/src/internal/version.h: $(wildcard $(srcdir)/VERSION $(srcdir)/.git)
 
 $(OBJDIR)/src/internal/version.o $(OBJDIR)/src/internal/version.lo: $(OBJDIR)/src/internal/version.h
 
-$(OBJDIR)/crt/rcrt1.o $(OBJDIR)/ldso/dlstart.lo $(OBJDIR)/ldso/dynlink.lo: $(srcdir)/src/internal/dynlink.h $(srcdir)/arch/$(ARCH)/reloc.h
-
-$(OBJDIR)/crt/crt1.o $(OBJDIR)/crt/scrt1.o $(OBJDIR)/crt/rcrt1.o $(OBJDIR)/ldso/dlstart.lo: $(srcdir)/arch/$(ARCH)/crt_arch.h
-
-$(OBJDIR)/crt/rcrt1.o: $(srcdir)/ldso/dlstart.c
-
-$(OBJDIR)/crt/Scrt1.o $(OBJDIR)/crt/rcrt1.o: CFLAGS_ALL += -fPIC
-
-$(OBJDIR)/crt/$(ARCH)/crti.o: $(srcdir)/crt/$(ARCH)/crti.s
-
-$(OBJDIR)/crt/$(ARCH)/crtn.o: $(srcdir)/crt/$(ARCH)/crtn.s
-
 OPTIMIZE_SRCS = $(wildcard $(OPTIMIZE_GLOBS:%=$(srcdir)/src/%))
 $(OPTIMIZE_SRCS:$(srcdir)/%.c=$(OBJDIR)/%.o) $(OPTIMIZE_SRCS:$(srcdir)/%.c=$(OBJDIR)/%.lo): CFLAGS += -O3
 
 MEMOPS_SRCS = src/string/memcpy.c src/string/memmove.c src/string/memcmp.c src/string/memset.c
 $(MEMOPS_SRCS:%.c=$(OBJDIR)/%.o) $(MEMOPS_SRCS:%.c=$(OBJDIR)/%.lo): CFLAGS_ALL += $(CFLAGS_MEMOPS)
-
-NOSSP_SRCS = $(wildcard crt/*.c) \
-	src/env/__libc_start_main.c src/env/__init_tls.c \
-	src/env/__stack_chk_fail.c \
-	src/thread/__set_thread_area.c src/thread/$(ARCH)/__set_thread_area.c \
-	src/string/memset.c src/string/$(ARCH)/memset.c \
-	src/string/memcpy.c src/string/$(ARCH)/memcpy.c \
-	ldso/dlstart.c ldso/dynlink.c
-$(NOSSP_SRCS:%.c=$(OBJDIR)/%.o) $(NOSSP_SRCS:%.c=$(OBJDIR)/%.lo): CFLAGS_ALL += $(CFLAGS_NOSSP)
-
-$(CRT_OBJS): CFLAGS_ALL += -DCRT
-
-$(LOBJS) $(LDSO_OBJS): CFLAGS_ALL += -fPIC
 
 CC_CMD = $(CC) $(CFLAGS_ALL) -c -o $@ $<
 
@@ -164,10 +133,6 @@ $(OBJDIR)/%.lo: $(srcdir)/%.S
 $(OBJDIR)/%.lo: $(srcdir)/%.c $(GENH) $(IMPH)
 	@$(CC_CMD)
 
-$(LIBDIR)/libc.so: $(LOBJS) $(LDSO_OBJS)
-	@$(CC) $(CFLAGS_ALL) $(LDFLAGS_ALL) -nostdlib -shared \
-	-Wl,-e,_dlstart -o $@ $(LOBJS) $(LDSO_OBJS) $(LIBCC)
-
 $(LIBDIR)/libc.a: $(AOBJS)
 	rm -f $@
 	@$(AR) rc $@ $(AOBJS)
@@ -177,21 +142,9 @@ $(EMPTY_LIBS):
 	@rm -f $@
 	@$(AR) rc $@
 
-$(LIBDIR)/%.o: $(OBJDIR)/crt/$(ARCH)/%.o
-	@cp $< $@
-
-$(LIBDIR)/%.o: $(OBJDIR)/crt/%.o
-	@cp $< $@
-
-$(LIBDIR)/musl-gcc.specs: $(srcdir)/tools/musl-gcc.specs.sh config.mak
-	@sh $< "$(includedir)" "$(libdir)" "$(LDSO_PATHNAME)" > $@
 
 $(OBJDIR)/musl-gcc: config.mak
 	@printf '#!/bin/sh\nexec "$${REALGCC:-$(WRAPCC_GCC)}" "$$@" -specs "%s/musl-gcc.specs"\n' "$(libdir)" > $@
-	@chmod +x $@
-
-$(OBJDIR)/%-clang: $(srcdir)/tools/%-clang.in config.mak
-	@sed -e 's!@CC@!$(WRAPCC_CLANG)!g' -e 's!@PREFIX@!$(prefix)!g' -e 's!@INCDIR@!$(includedir)!g' -e 's!@LIBDIR@!$(libdir)!g' -e 's!@LDSO@!$(LDSO_PATHNAME)!g' $< > $@
 	@chmod +x $@
 
 $(DESTDIR)$(bindir)/%: $(OBJDIR)/%
@@ -215,10 +168,7 @@ $(DESTDIR)$(includedir)/bits/%: $(OBJDIR)/include/bits/%
 $(DESTDIR)$(includedir)/%: $(srcdir)/include/%
 	@$(INSTALL) -D -m 644 $< $@
 
-$(DESTDIR)$(LDSO_PATHNAME): $(DESTDIR)$(libdir)/libc.so
-	@$(INSTALL) -D -l $(libdir)/libc.so $@ || true
-
-install-libs: $(ALL_LIBS:$(LIBDIR)/%=$(DESTDIR)$(libdir)/%) $(if $(SHARED_LIBS),$(DESTDIR)$(LDSO_PATHNAME),)
+install-libs: $(ALL_LIBS:$(LIBDIR)/%=$(DESTDIR)$(libdir)/%) $(if $(SHARED_LIBS),)
 
 install-headers: $(ALL_INCLUDES:include/%=$(DESTDIR)$(includedir)/%)
 

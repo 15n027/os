@@ -46,7 +46,7 @@ int vsnprintf(char *restrict s, size_t n, const char *restrict fmt, va_list ap)
 	};
 
 	if (n > INT_MAX) {
-		errno = EOVERFLOW;
+        //	errno = EOVERFLOW;
 		return -1;
 	}
 
