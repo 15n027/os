@@ -12,9 +12,9 @@ DISPDESTDIR=${DESTDIR//$OBJDIRPREFIX}
 for target in "$@"; do
     treal=`realpath "$target" || echo "$target"`
 
-    if [ "$VERBOSE" -ne 0 ]; then
+    if [ "$VERBOSE" -gt 1 ]; then
         echo install -m 644 -D -t "$DESTDIR" "$target"
-    else
+    elif [ "$VERBOSE" -eq 1 ]; then
         echo "Installing $treal -> $DISPDESTDIR"
     fi
     install -m 644 -D -t "$DESTDIR" "$target"
