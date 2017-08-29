@@ -8,8 +8,8 @@ static FILE f = {
 	.flags = F_PERM | F_NORD,
 	.lbf = -1,
 	.write = __stdio_write,
-	.seek = __stdio_seek,
-	.close = __stdio_close,
+	.seek = NULL,
+	.close = NULL,
 	.lock = -1,
 };
 FILE *const stderr = &f;
