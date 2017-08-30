@@ -13,6 +13,8 @@ $(ISO): $(TARGETDIR)/$(KERNEL32) $(TARGETDIR)/$(KERNELL64) grub.cfg Makefile
 	@echo "Generating " $(ISO)
 	@grub-mkrescue -o $(ISO) $(ISODIR) > /dev/null 2>&1 || rm -f $(ISO)
 #	@genisoimage -o $(ISO) $(ISODIR) || rm -f $(ISO)
-	@$(INSTALL) $(TARGETDIR)/tftp $(ISO)
+	@$(INSTALL) $(TARGETDIR)/tftp $(TARGETDIR)/$(KERNEL32)
+	@$(INSTALL) $(TARGETDIR)/tftp $(TARGETDIR)/$(KERNEL64)
+	@$(INSTALL) $(TARGETDIR)/tftp ipxe.default
 
 include $(TOPDIR)/build/post.mk

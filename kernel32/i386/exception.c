@@ -6,7 +6,6 @@
 #include "debug.h"
 #include "x86/x86_defs.h"
 #include "kernel.h"
-#include "x86/paging.h"
 
 void
 idt_common(IntrFrame *frame)

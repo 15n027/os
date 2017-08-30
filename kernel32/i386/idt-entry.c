@@ -17,11 +17,9 @@
 #define ENTRY_HASERR(name, num) ENTRY_ASM(name, num, NOTHING())
 #define ENTRY_NOERR(name, num)  ENTRY_ASM(name, num, PUSHZERO())
 
-asm(
-    ".code64\n"
+asm(".code64\n"
 #include "x86/idt-table.h"
-    ".code32\n"
-);
+    ".code32\n");
 #undef ENTRY
 #undef ENTRY_HASERR
 #undef ENTRY_NOERR
@@ -32,8 +30,6 @@ asm(
 #include "x86/idt-table.h"
 #undef ENTRY
 
-
-#define OFFS(off) (((((uint64_t)(off)) << 32) & 0xffff000000000000ull) | ((off) & 0xffffull))
 #define SEG(cs) ((cs) << 16)
 
 static inline Gate

@@ -81,11 +81,21 @@ void kern_entry(uint32_t mbsig, multiboot_info_t *mbi)
     if (mbi->flags & MULTIBOOT_INFO_MODS) {
         multiboot_module_t *mods = (void*)mbi->mods_addr;
         printf("MB mods count=%u addr=%p\n", mbi->mods_count, mods);
+        map_pages(mbi->mods_addr, mbi->mods_addr,
+                PAGES_SPANNED(mbi->mods_addr, mbi->mods_addr + mbi->mods_count * sizeof *mods),
+                PT_NX | PT_P);
         for (uint32 i = 0; i < mbi->mods_count; i++) {
             uint64 entry;
+
+
+            printf("%s:%d\n", __FILE__, __LINE__);
             map_page(mods[i].cmdline, mods[i].cmdline, PT_P | PT_NX);
+            printf("%s:%d\n", __FILE__, __LINE__);
+            DBG("");
             map_pages(mods[i].mod_start, mods[i].mod_start,
                     PAGES_SPANNED(mods[i].mod_start, mods[i].mod_end), PT_P | PT_NX);
+            printf("%s:%d\n", __FILE__, __LINE__);
+            DBG("");
             entry = load_module(PA_TO_PTR(mods[i].cmdline), PA_TO_PTR(mods[i].mod_start),
                     mods[i].mod_end - mods[i].mod_start);
             ASSERT(entry != 0);
