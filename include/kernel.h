@@ -9,7 +9,10 @@
 #define STEXT PTR_TO_PA(_stext)
 #define ETEXT PTR_TO_PA(_etext)
 #define S_RW_AREA PTR_TO_PA(_s_rw_area)
+#define S_EARLYHEAP PTR_TO_PA(_start_earlyheap)
+#define E_EARLYHEAP (S_EARLYHEAP + PTR_TO_PA(_earlyheap_size))
 
+extern const char _start_earlyheap[], _earlyheap_size[];
 extern const char _start_kernel[], _end_kernel[];
 extern const char _stack_top[];
 extern const uint32 _bss_size;

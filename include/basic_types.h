@@ -18,6 +18,7 @@ TYPE(int64);
 
 typedef uintptr_t VA;
 typedef uint64 PA;
+typedef uint64 PFN;
 typedef uint64 VA64;
 
 #define INVALID_PA (0xffffffffffffbeefull)

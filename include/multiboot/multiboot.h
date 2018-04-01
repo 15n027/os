@@ -222,4 +222,22 @@ typedef struct multiboot_mod_list multiboot_module_t;
 
 void multiboot_init(void);
 
+#include <stdint.h>
+#include <stddef.h>
+static inline const multiboot_memory_map_t *
+next_multiboot_mmap_entry(const multiboot_info_t *mbi, const multiboot_memory_map_t *cur)
+{
+    if (cur == NULL) {
+        cur = (multiboot_memory_map_t*)(uintptr_t)mbi->mmap_addr;
+    } else {
+        uintptr_t next = (uintptr_t)cur + cur->size + sizeof cur->size;
+        if (next < mbi->mmap_addr + mbi->mmap_length) {
+            cur = (multiboot_memory_map_t*)next;
+        } else {
+            cur = NULL;
+        }
+    }
+    return cur;
+}
+
 #endif /* ! MULTIBOOT_HEADER */

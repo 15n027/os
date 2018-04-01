@@ -40,13 +40,5 @@
 #define PT_ADDR_2M(pa) ((pa) & ~LPAGE_MASK)
 
 typedef uint64 PTE;
-PA get_paging_root(void);
-void init_4level_pagetable(void);
-void map_pages_with_root(VA root, VA64 vBase, PA pBase, uint32 numPages, uint64 flags);
-void map_page_with_root(VA root, VA64 vBase, PA pBase, uint64 flags);
-void map_pages(VA vBase, PA pBase, uint32 numPages, uint64 flags);
-void map_page(VA vBase, PA pBase, uint64 flags);
 
 PA pt_entry_to_pa(PTE entry);
-void enable_paging(VA root);
-bool is_paging_enabled(void);

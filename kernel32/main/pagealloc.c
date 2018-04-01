@@ -109,9 +109,10 @@ alloc_aligned_phys_pages_in_range(PA loAddr, PA hiAddr, size_t nPages, uintptr_t
         PagePool *p = &pools[i];
         uint64 start = MAX(ROUNDUP(p->start, align), loAddr);
         uint64 end = start + len;
-        if (end > hiAddr || end > p->start + p->len) {
+        if (p->len == 0 || end > hiAddr || end > p->start + p->len) {
             continue;
         }
+        p->len -= end - p->start;
         p->start = end;
         return start;
     }

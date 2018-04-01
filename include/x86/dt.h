@@ -2,11 +2,35 @@
 
 #include "exception.h"
 #include "basic_types.h"
+#include "basic_defs.h"
 
+#pragma pack(push, 1)
 typedef struct {
     uint16 limit;
     uint32 base;
-} __attribute__((packed)) baselimit;
+} BaseLimit32;
+
+typedef struct {
+    uint16 limit;
+    uint64 base;
+} BaseLimit64;
+
+typedef struct {
+    uint64 ip;
+    uint16 cs;
+} FarPtr64;
+
+typedef struct {
+    uint32 ip;
+    uint16 cs;
+} FarPtr32;
+
+#pragma pack(pop)
+
+typedef struct {
+    uint64 lo;
+    uint64 hi;
+} Gate;
 
 #define DT_G_SHIFT (23 + 32)
 #define DT_D_SHIFT (22 + 32)
@@ -68,22 +92,7 @@ enum DT_TYPE {
 #define DT_IDX_DS_DPL0   2
 #define DT_IDX_CS32_DPL0 3
 
-
-typedef struct {
-    uint64 lo;
-    uint64 hi;
-} Gate;
-
-typedef struct PACKED {
-    uint64 ip;
-    uint16 cs;
-} FarPtr64;
-typedef struct PACKED {
-    uint32 ip;
-    uint16 cs;
-} FarPtr32;
-
-void farjump_to_64(uint64 rip) __attribute__((noreturn));
+void farjump_to_64(const Regs64 *regs) __attribute__((noreturn));
 void load_idt(void);
 void load_gdt(void);
 void enter_mode_ia32e(void);

@@ -11,7 +11,7 @@
 #include "kernel.h"
 #include "basic_types.h"
 #include "x86/x86_defs.h"
-#include "x86/paging.h"
+#include "i386/paging32.h"
 #include "x86/dt.h"
 
 void earlyconsole_init(void);
@@ -86,20 +86,17 @@ void kern_entry(uint32_t mbsig, multiboot_info_t *mbi)
                 PT_NX | PT_P);
         for (uint32 i = 0; i < mbi->mods_count; i++) {
             uint64 entry;
-
-
-            printf("%s:%d\n", __FILE__, __LINE__);
+            Regs64 handoff = {0};
             map_page(mods[i].cmdline, mods[i].cmdline, PT_P | PT_NX);
-            printf("%s:%d\n", __FILE__, __LINE__);
-            DBG("");
             map_pages(mods[i].mod_start, mods[i].mod_start,
                     PAGES_SPANNED(mods[i].mod_start, mods[i].mod_end), PT_P | PT_NX);
-            printf("%s:%d\n", __FILE__, __LINE__);
-            DBG("");
             entry = load_module(PA_TO_PTR(mods[i].cmdline), PA_TO_PTR(mods[i].mod_start),
                     mods[i].mod_end - mods[i].mod_start);
             ASSERT(entry != 0);
-            farjump_to_64(entry);
+            handoff.rdi = mbsig;
+            handoff.rsi = PTR_TO_VA(mbi);
+            handoff.rip = entry;
+            farjump_to_64(&handoff);
         }
     }
     HALT();

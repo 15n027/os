@@ -8,7 +8,7 @@
 #include "kernel.h"
 
 void
-idt_common(IntrFrame *frame)
+idt_common(IntrFrame32 *frame)
 {
     printf("INT/EXC VEC: %llu err: %#llx cs:ip %#llx:%#llx\n", frame->vector, frame->errcode,
             frame->cs, frame->eip);

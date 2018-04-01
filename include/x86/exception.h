@@ -18,8 +18,58 @@ typedef struct {
     uint32 ebp;
     uint32 esi;
     uint32 edi;
-    uint32 flags;
+    uint32 eflags;
 } Regs32;
+
+typedef struct {
+    uint64 rax;
+    uint64 rcx;
+    uint64 rdx;
+    uint64 rbx;
+    uint64 rsp;
+    uint64 rbp;
+    uint64 rsi;
+    uint64 rdi;
+    uint64 r8;
+    uint64 r9;
+    uint64 r10;
+    uint64 r11;
+    uint64 r12;
+    uint64 r13;
+    uint64 r14;
+    uint64 r15;
+    uint64 pad[2];
+    uint64 rip;
+    uint64 rflags;
+    uint64 pad2[2];
+} Regs64;
+
+typedef struct {
+    uint64 rax;
+    uint64 rcx;
+    uint64 rdx;
+    uint64 rbx;
+
+    uint64 rbp;
+    uint64 rsi;
+    uint64 rdi;
+    uint64 r8;
+    uint64 r9;
+    uint64 r10;
+    uint64 r11;
+    uint64 r12;
+    uint64 r13;
+    uint64 r14;
+    uint64 r15;
+    uint64 vector;
+    uint64 errcode;
+    uint64 rip;
+    uint64 cs;
+    uint64 rflags;
+    /* If privilege change */
+    uint64 rsp;
+    uint64 ss;
+} IntrFrame64;
 
 typedef struct {
     uint32 edi;
@@ -37,6 +87,6 @@ typedef struct {
     /* If privilege change */
     uint64 esp;
     uint64 ss;
-} IntrFrame;
+} IntrFrame32;
 
 #endif

@@ -9,9 +9,11 @@ PHDRS
 
 SECTIONS
 {
-        . = 0xfffffffff0000000 + SIZEOF_HEADERS;
+        . = 0xffffffff80000000 + SIZEOF_HEADERS;
         . = .;
+        _start_kernel = .;
         _stext = .;
+        . = .;
         .text : {
               *(.text*)
               _etext = ABSOLUTE(.);
@@ -27,7 +29,8 @@ SECTIONS
               _ectors = ABSOLUTE(.);
         }
         . = ALIGN(0x1000);
-        .data ALIGN(0x1000) : {
+        . = .;
+        .data : {
               *(.data*)
               _edata = ABSOLUTE(.);
         } :data
@@ -36,9 +39,12 @@ SECTIONS
         _sbss = .;
         .bss : {
               *(.dynbss .bss .bss* COMMON .gnu.linkonce.b.*)
-              
-        }
+              . = ALIGN(0x1000);
+              . += 8K;
+              _stack = ABSOLUTE(.);
+        } :data
+        
         _ebss = ABSOLUTE(.);
         _bss_size = SIZEOF(.bss);
-        _end_kernel = .;
+        _end_kernel = .;        
 }

@@ -5,10 +5,11 @@ ifneq ($(ARCH), x86_64)
 $(error "arch is wrong")
 endif
 
-SRCS := main.c start.s console.c
+SRCS := main.c start.s console.c x86/init.c x86/idt.c x86/exc.s \
+	mm/memmap.c libc/lock.c libc/malloc.c mm/vmm.c
 
 CFLAGS += -Werror
-CPPFLAGS += -I. -Iinclude
+CPPFLAGS += -I. -Iinclude -I../include
 LDSCRIPT := build/ldscript-$(ARCH)
 LDFLAGS += -T $(LDSCRIPT) --gc-sections -static
 LDLIBS := -lc
@@ -19,7 +20,7 @@ include $(TOPDIR)/build/pre-targets.mk
 all: $(TARGETDIR)/$(KERNEL)
 
 $(OBJDIR)/$(KERNEL): $(OBJS) $(LDSCRIPT)
-	$(LD) -o $@ $(OBJS) $(LDFLAGS) $(LDLIBS) -Map $(OBJDIR)/$(KERNEL).map
+	@$(LD) -o $@ $(OBJS) $(LDFLAGS) $(LDLIBS) -Map $(OBJDIR)/$(KERNEL).map
 
 $(TARGETDIR)/$(KERNEL): $(OBJDIR)/$(KERNEL)
 	@$(INSTALLTARGET) $<
