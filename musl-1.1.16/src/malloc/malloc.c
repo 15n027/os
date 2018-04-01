@@ -53,23 +53,26 @@ static struct {
 
 #define C_INUSE  ((size_t)1)
 
-#define IS_MMAPPED(c) !((c)->csize & (C_INUSE))
-
+//#define IS_MMAPPED(c) !((c)->csize & (C_INUSE))
+#define IS_MMAPPED(c) 0
 
 /* Synchronization tools */
-
 static inline void lock(volatile int *lk)
 {
-	if (libc.threads_minus_1)
-		while(a_swap(lk, 1)) __wait(lk, lk+1, 1, 1);
+    LOCK(lk);
+    //	if (libc.threads_minus_1)
+    //		while(a_swap(lk, 1)) __wait(lk, lk+1, 1, 1);
 }
 
 static inline void unlock(volatile int *lk)
 {
+    UNLOCK(lk);
+#if 0
 	if (lk[0]) {
 		a_store(lk, 0);
 		if (lk[1]) __wake(lk, 1, 1);
 	}
+#endif
 }
 
 static inline void lock_bin(int i)
@@ -210,7 +213,7 @@ static int adjust_size(size_t *n)
 	/* Result of pointer difference must fit in ptrdiff_t. */
 	if (*n-1 > PTRDIFF_MAX - SIZE_ALIGN - PAGE_SIZE) {
 		if (*n) {
-			errno = ENOMEM;
+            //			errno = ENOMEM;
 			return -1;
 		} else {
 			*n = SIZE_ALIGN;
@@ -279,7 +282,7 @@ static int pretrim(struct chunk *self, size_t n, int i, int j)
 	if (j < i+3) {
 		if (j != 63) return 0;
 		n1 = CHUNK_SIZE(self);
-		if (n1-n <= MMAP_THRESHOLD) return 0;
+		if (1 || n1-n <= MMAP_THRESHOLD) return 0;
 	} else {
 		n1 = CHUNK_SIZE(self);
 	}
@@ -324,6 +327,7 @@ void *malloc(size_t n)
 
 	if (adjust_size(&n) < 0) return 0;
 
+#if 0
 	if (n > MMAP_THRESHOLD) {
 		size_t len = n + OVERHEAD + PAGE_SIZE - 1 & -PAGE_SIZE;
 		char *base = __mmap(0, len, PROT_READ|PROT_WRITE,
@@ -334,6 +338,7 @@ void *malloc(size_t n)
 		c->psize = SIZE_ALIGN - OVERHEAD;
 		return CHUNK_TO_MEM(c);
 	}
+#endif
 
 	i = bin_index_up(n);
 	for (;;) {
@@ -452,20 +457,22 @@ void free(void *p)
 	struct chunk *self = MEM_TO_CHUNK(p);
 	struct chunk *next;
 	size_t final_size, new_size, size;
-	int reclaim=0;
+    //	int reclaim=0;
 	int i;
 
 	if (!p) return;
 
+#if 0
 	if (IS_MMAPPED(self)) {
 		size_t extra = self->psize;
 		char *base = (char *)self - extra;
 		size_t len = CHUNK_SIZE(self) + extra;
 		/* Crash on double free */
 		if (extra & 1) a_crash();
-		__munmap(base, len);
+        __munmap(base, len);
 		return;
 	}
+#endif
 
 	final_size = new_size = CHUNK_SIZE(self);
 	next = NEXT_CHUNK(self);
@@ -490,15 +497,19 @@ void free(void *p)
 			self = PREV_CHUNK(self);
 			size = CHUNK_SIZE(self);
 			final_size += size;
+#if 0
 			if (new_size+size > RECLAIM && (new_size+size^size) > size)
-				reclaim = 1;
+                reclaim = 1;
+#endif
 		}
 
 		if (alloc_fwd(next)) {
 			size = CHUNK_SIZE(next);
 			final_size += size;
+#if 0
 			if (new_size+size > RECLAIM && (new_size+size^size) > size)
 				reclaim = 1;
+#endif
 			next = NEXT_CHUNK(next);
 		}
 	}
@@ -516,16 +527,18 @@ void free(void *p)
 	self->prev->next = self;
 
 	/* Replace middle of large chunks with fresh zero pages */
+#if 0
 	if (reclaim) {
 		uintptr_t a = (uintptr_t)self + SIZE_ALIGN+PAGE_SIZE-1 & -PAGE_SIZE;
-		uintptr_t b = (uintptr_t)next - SIZE_ALIGN & -PAGE_SIZE;
+       		uintptr_t b = (uintptr_t)next - SIZE_ALIGN & -PAGE_SIZE;
 #if 1
-		__madvise((void *)a, b-a, MADV_DONTNEED);
+            __madvise((void *)a, b-a, MADV_DONTNEED);
 #else
 		__mmap((void *)a, b-a, PROT_READ|PROT_WRITE,
 			MAP_PRIVATE|MAP_ANONYMOUS|MAP_FIXED, -1, 0);
 #endif
 	}
+#endif
 
 	unlock_bin(i);
 }

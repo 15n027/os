@@ -46,7 +46,7 @@ void *__expand_heap(size_t *pn)
 	size_t n = *pn;
 
 	if (n > SIZE_MAX/2 - PAGE_SIZE) {
-		errno = ENOMEM;
+		//errno = ENOMEM;
 		return 0;
 	}
 	n += -n & PAGE_SIZE-1;

@@ -13,12 +13,12 @@ void *__memalign(size_t align, size_t len)
 	size_t header, footer;
 
 	if ((align & -align) != align) {
-		errno = EINVAL;
+        //		errno = EINVAL;
 		return NULL;
 	}
 
 	if (len > SIZE_MAX - align) {
-		errno = ENOMEM;
+		//errno = ENOMEM;
 		return NULL;
 	}
 
