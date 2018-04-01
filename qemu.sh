@@ -13,10 +13,10 @@ DBG="-s -S"
 fi
 $QEMU \
     -machine q35 \
-    -m 7168 \
+    -m 4 \
     $CDROM \
-    -enable-kvm \
     -vga std \
+    -enable-kvm \
     -monitor /dev/stdout \
     -display sdl  $DBG \
     -netdev user,id=bort,ipv4=on,net=172.16.0.0/16,dhcpstart=172.16.1.1,tftp=$TFTPDIR,bootfile=ipxe.default \

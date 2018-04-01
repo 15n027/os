@@ -35,16 +35,18 @@ SECTIONS
               _edata = ABSOLUTE(.);
         } :data
 
-        . = ALIGN(64);
-        _sbss = .;
+        . = ALIGN(256);
+        _sbss = ABSOLUTE(.);
         .bss : {
               *(.dynbss .bss .bss* COMMON .gnu.linkonce.b.*)
+              _bss_size = ABSOLUTE(SIZEOF(.bss));
               . = ALIGN(0x1000);
+              _stack0_guard = ABSOLUTE(.);
+              . += 4K;
+              _stack0_bottom = ABSOLUTE(.);
               . += 8K;
-              _stack = ABSOLUTE(.);
+              _stack0_top = ABSOLUTE(.);
+              _ebss = ABSOLUTE(.);
         } :data
-        
-        _ebss = ABSOLUTE(.);
-        _bss_size = SIZEOF(.bss);
-        _end_kernel = .;        
+        _end_kernel= .;
 }

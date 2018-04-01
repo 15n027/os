@@ -56,7 +56,7 @@ init_4level_pagetable(void)
     ASSERT(IS_ALIGNED(PTR_TO_PA(scratch), PAGE_SIZE));
 
     pml4[PML4_OFF(scratch)] = PT_ADDR_4K(PTR_TO_PA(pml3)) | PT_RW | PT_P;
-    pml4[511] = PT_ADDR_4K(PTR_TO_PA(pml4)) | PT_RW | PT_P;
+    pml4[256] = PT_ADDR_4K(PTR_TO_PA(pml4)) | PT_RW | PT_P;
     pml3[PML3_OFF(scratch)] = PT_ADDR_4K(PTR_TO_PA(pml2)) | PT_RW | PT_P;
     pml2[PML2_OFF(scratch)] = PT_ADDR_4K(PTR_TO_PA(pml1)) | PT_RW | PT_P;
     pml1[PML1_OFF(scratch)] = PT_ADDR_4K(PTR_TO_PA(scratch)) | PT_RW | PT_P;

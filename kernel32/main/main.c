@@ -17,6 +17,14 @@
 void earlyconsole_init(void);
 
 static void
+init_pic(void)
+{
+    asm("outb %0, $0xa1\n"
+        "outb %0, $0x21\n"
+        :: "a"(0xff));
+}
+
+static void
 init_phys_map(multiboot_info_t *mbi)
 {
     multiboot_memory_map_t *mmap;
@@ -50,6 +58,7 @@ init_phys_map(multiboot_info_t *mbi)
 
 void kern_entry(uint32_t mbsig, multiboot_info_t *mbi)
 {
+    init_pic();
     earlyconsole_init();
     if (mbsig != MULTIBOOT_BOOTLOADER_MAGIC) {
         printf("32->64 loader wasn't loaded via multiboot.\n");

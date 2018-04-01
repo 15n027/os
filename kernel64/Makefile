@@ -6,7 +6,7 @@ $(error "arch is wrong")
 endif
 
 SRCS := main.c start.s console.c x86/init.c x86/idt.c x86/exc.s \
-	mm/memmap.c libc/lock.c libc/malloc.c mm/vmm.c
+	mm/memmap.c libc/lock.c mm/vmm.c
 
 CFLAGS += -Werror
 CPPFLAGS += -I. -Iinclude -I../include

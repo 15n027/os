@@ -7,6 +7,7 @@ typedef uint64 PFN;
 
 void map_page_local(VA va, PA pa, uint64 flags);
 void vmm_init(void);
+void vmm_earlyinit(void);
 void pmm_init_multiboot(multiboot_info_t *mbi);
 
 PA alloc_aligned_phys_pages_in_range(PA loAddr, PA hiAddr, size_t nPages, uintptr_t align);

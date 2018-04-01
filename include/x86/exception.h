@@ -49,7 +49,6 @@ typedef struct {
     uint64 rcx;
     uint64 rdx;
     uint64 rbx;
-
     uint64 rbp;
     uint64 rsi;
     uint64 rdi;
@@ -85,8 +84,8 @@ typedef struct {
     uint64 cs;
     uint64 eflags;
     /* If privilege change */
-    uint64 esp;
     uint64 ss;
+    uint64 esp;
 } IntrFrame32;
 
 #endif

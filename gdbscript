@@ -1,11 +1,12 @@
-file obj/targets/kernel64.elf
+file obj/targets/kernel32.elf
 #set architecture i386:x64-32
 set architecture i386:x86-64
 target remote :1234
-set disassemble-next-line on
+#set disassemble-next-line on
 #set height 25
 #hb farjump_to_64
 #hb gdt_init
-hb vmm_init
+#hb vmm_init
+hb load_module
 c
 

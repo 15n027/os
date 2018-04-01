@@ -1,5 +1,5 @@
 ARCH ?= i686
-VERBOSE ?= 0
+VERBOSE ?= 1
 TOPDIR ?= $(abspath .)
 
 ifeq ($(origin ARCH), undefined)
@@ -43,17 +43,19 @@ DEBUG ?= 1
 #-ftrapv
 # -finstrument-functions
 CFLAGS := -Wall -std=gnu99 -mno-sse -mno-mmx -nostdlib -nostdinc -static \
-	-Wstack-usage=0 -ffreestanding -fbuiltin -mindirect-branch=thunk \
-	-mindirect-branch-register -mgeneral-regs-only -mmitigate-rop
+	-Wstack-usage=0 -ffreestanding -fbuiltin \
+# -mindirect-branch=thunk \
+#	-mindirect-branch-register -mgeneral-regs-only -mmitigate-rop
 CPPFLAGS := -I $(OBJDIRPREFIX)/include
 LDFLAGS := -L $(LIBDIR) -nostdlib -static $(LIBGCC)
 
 ifeq ($(DEBUG), 0)
 CFLAGS += -fomit-frame-pointer -Os
 else
-CFLAGS +=  -g -ggdb -g3 -DINCLUDE_ASSERTS -fverbose-asm
+CFLAGS += -DINCLUDE_ASSERTS -fverbose-asm
 CFLAGS += -fno-omit-frame-pointer -O
 endif
+CFLAGS += -g -ggdb -g3
 
 ifeq ($(ARCH), x86_64)
 	CFLAGS += -mno-red-zone -mcmodel=kernel

@@ -29,6 +29,7 @@ print_mmap(const multiboot_info_t *mbi)
 void
 kern_entry(uint32 mbsig, multiboot_info_t *mbi)
 {
+    asm("sti");
     earlyconsole_init();
     puts("made it to 64 bit mode woot");
     cpu_init();
@@ -38,6 +39,7 @@ kern_entry(uint32 mbsig, multiboot_info_t *mbi)
         pmm_init_multiboot(mbi);
     }
     vmm_init();
+
     asm("int3\n");
     HALT();
 }

@@ -84,6 +84,8 @@ idt_common(IntrFrame64 *frame)
     if (frame->vector == EXC_BP || frame->vector == EXC_OF) {
         return;
     }
-    for(;;)
+    for(;;) {
         asm("cli;hlt");
+        printf("Broke out of cli;hlt\n");
+    }
 }
