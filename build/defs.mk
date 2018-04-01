@@ -43,7 +43,8 @@ DEBUG ?= 1
 #-ftrapv
 # -finstrument-functions
 CFLAGS := -Wall -std=gnu99 -mno-sse -mno-mmx -nostdlib -nostdinc -static \
-	-Wstack-usage=0 -ffreestanding -fbuiltin
+	-Wstack-usage=0 -ffreestanding -fbuiltin -mindirect-branch=thunk \
+	-mindirect-branch-register -mgeneral-regs-only -mmitigate-rop
 CPPFLAGS := -I $(OBJDIRPREFIX)/include
 LDFLAGS := -L $(LIBDIR) -nostdlib -static $(LIBGCC)
 
@@ -55,7 +56,7 @@ CFLAGS += -fno-omit-frame-pointer -O
 endif
 
 ifeq ($(ARCH), x86_64)
-	CFLAGS += -mno-red-zone -mcmodel=large
+	CFLAGS += -mno-red-zone -mcmodel=kernel
 	CFLAGS += -DARCH_BITS=64
 else
 	CFLAGS += -DARCH_BITS=32

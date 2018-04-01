@@ -1,6 +1,7 @@
 #!/bin/bash -x
 
-GCC=gcc-8-20170813
+GCC=gcc
+#GCC=gcc-8-20180121
 BINUTILS=binutils-2.29
 
 INSTALLDIR=`pwd`/installed
@@ -8,6 +9,8 @@ export CFLAGS="-O2 -pipe -fomit-frame-pointer"
 export CXXFLAGS=${CFLAGS}
 BINUTILSFLAGS="--prefix=${INSTALLDIR} --disable-multilib --enable-bootstrap=no --enable-lto --disable-bootstrap  --enable-compressed-debug-sections=all --with-sysroot --enable-host-shared --enable-vtable-verify"
 GCCFLAGS="--prefix=${INSTALLDIR} --enable-ld=yes --enable-languages=c,c++ --disable-libstdcxx --disable-bootstrap --disable-libssp --disable-libquadmath --disable-libada"
+
+if [ 0 -eq 1 ]; then
 
 rm -rf ${BINUTILS}
 tar -xf ${BINUTILS}.tar.xz
@@ -24,10 +27,11 @@ pushd ${BINUTILS}
 popd
 rm -rf ${BINUTILS}
 
+fi
 
 BUILDDIR=build-dir
-rm -rf ${GCC}
-tar -xf ${GCC}.tar.xz
+#rm -rf ${GCC}
+#tar -xf ${GCC}.tar.xz
 rm -rf ${BUILDDIR}
 mkdir -p ${BUILDDIR}
 pushd ${BUILDDIR}
@@ -36,8 +40,8 @@ pushd ${BUILDDIR}
 popd
 rm -rf ${BUILDDIR}
 
-rm -rf ${GCC}
-tar -xf ${GCC}.tar.xz
+#rm -rf ${GCC}
+#tar -xf ${GCC}.tar.xz
 mkdir -p ${BUILDDIR}
 pushd ${BUILDDIR}
 ../${GCC}/configure $GCCFLAGS --target=x86_64-elf \
