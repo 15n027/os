@@ -17,6 +17,8 @@ TYPE(int32);
 TYPE(int64);
 
 typedef uintptr_t VA;
+typedef uintptr_t VPN;
+
 typedef uint64 PA;
 typedef uint64 PFN;
 typedef uint64 VA64;

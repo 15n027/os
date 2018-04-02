@@ -4,6 +4,7 @@
 #include "debug.h"
 #include "multiboot/multiboot.h"
 #include "memmap.h"
+#include <stdlib.h>
 
 void cpu_init(void);
 void
@@ -39,7 +40,21 @@ kern_entry(uint32 mbsig, multiboot_info_t *mbi)
         pmm_init_multiboot(mbi);
     }
     vmm_init();
+    uint8 *va;
+    printf("attempt memalign\n");
+    va = malloc(PAGE_SIZE);
 
+    printf("memalign returns %p\n", va);
+    *va = 123;
+    printf("survived malloc\n");
+    free(va);
+    va = malloc(100);
+    printf("malloc returns %p\n", va);
+    *va = 123;
+    printf("survived malloc\n");
+    HALT();
+    va = (void*)alloc_va(get_kern_vma(), 1);
+    *va = 0;
     asm("int3\n");
     HALT();
 }

@@ -57,7 +57,7 @@ void
 enter_mode_ia32e(void)
 {
     init_4level_pagetable();
-    SET_EFER(GET_EFER() | EFER_NXE | EFER_LME | EFER_LMA);
+    SET_EFER(GET_EFER() | EFER_NXE | EFER_LME | EFER_LMA | EFER_SCE);
     enable_paging(get_paging_root());
 }
 

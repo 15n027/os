@@ -21,7 +21,7 @@ init_pic(void)
 {
     asm("outb %0, $0xa1\n"
         "outb %0, $0x21\n"
-        :: "a"(0xff));
+        :: "a"((uint8)0xff));
 }
 
 static void

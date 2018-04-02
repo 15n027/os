@@ -13,7 +13,7 @@ DBG="-s -S"
 fi
 $QEMU \
     -machine q35 \
-    -m 4 \
+    -m 64 \
     $CDROM \
     -vga std \
     -enable-kvm \

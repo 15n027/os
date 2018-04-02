@@ -5,105 +5,77 @@
 #include <stdio.h>
 #include "kernel.h"
 #include "basic_types.h"
-#include "scratch.h"
 
 typedef struct {
-    uint64 start;
-    uint64 end;
+    uint32 start;
+    uint32 end;
 } PagePool;
+
+typedef struct PMMNode {
+    struct PMMNode *left, *right;
+    uint64 start, end;
+} PMMNode;
 
 #define MAX_POOLS PAGE_SIZE / sizeof(PagePool)
 static PagePool pools[MAX_POOLS];
-static size_t poolCnt;
+static uint32 poolCnt;
 
-#define IDX_TO_VA(l4, l3, l2, l1)                             \
-    (((l4 >= 256) ? 0xffff000000000000ull : 0) |              \
-      ((uint64)l4 << PML_SHIFT(4)) |                          \
-      ((uint64)l3 << PML_SHIFT(3)) |                          \
-      ((uint64)l2 << PML_SHIFT(2)) |                          \
-      ((uint64)l1 << PML_SHIFT(1)))
 
-void
-invtlb(void)
+static void
+insert_range_pagenum(uint32 start, uint32 end)
 {
-    SET_CR3(GET_CR3());
-}
+    ASSERT(start <= end);
+    ASSERT(poolCnt < MAX_POOLS);
+    pools[poolCnt].start = start;
+    pools[poolCnt].end = end;
 
-void
-invpage(void *va)
-{
-    asm volatile("invlpg (%0)" : : "r"(va) : "memory");
-}
-
-#define PTIDX 256
-const PTE *pml[] = {NULL,
-                    (PTE*)IDX_TO_VA(PTIDX, 0, 0, 0),
-                    (PTE*)IDX_TO_VA(PTIDX, PTIDX, 0, 0),
-                    (PTE*)IDX_TO_VA(PTIDX, PTIDX, PTIDX, 0),
-                    (PTE*)IDX_TO_VA(PTIDX, PTIDX, PTIDX, PTIDX)};
-static PA
-pagewalk(void *p)
-{
-    PA ret;
-    uint32 i;
-    PTE pte;
-    uint64 off = 0;
-
-    for (i = 4; i > 0; i--) {
-        off = off * 512 + PML_OFF((VA)p, i);
-        pte = pml[i][off];
-        if ((pte & PT_P) == 0) {
-            DBG("%p NP", p);
-            ASSERT(0);
-            return -1;
-        }
-        if (pte & PT_PS) {
-            ret = pte & ~(PT_NX | LPAGE_MASK);
-            return ret;
-        }
-    }
-    ret = pte & ~(PT_NX | PAGE_MASK);
-    return ret;
+    poolCnt++;
 }
 
 static void
 insert_range(uint64 start, uint64 end)
 {
-    ASSERT(poolCnt < MAX_POOLS);
-    pools[poolCnt].start = start;
-    pools[poolCnt].end = end;
-    printf("insert_Range: %016lx - %016lx\n", start, end);
-    poolCnt++;
+    printf("insert_Range: %08lx - %08lx\n", start, end);
+    start = ROUNDUP(start, PAGE_SIZE);
+    end = ROUNDDOWN(end, PAGE_SIZE);
+    start /= PAGE_SIZE;
+    end /= PAGE_SIZE;
+    insert_range_pagenum(start, end);
 }
 
 static void
 apply_used_range(uint64 start, uint64 end)
 {
-    size_t i;
-    const bool verbose = 0;
+    static const bool verbose = 0;
+    uint32 i;
+
+    //    DBG("apply_used_range: %08lx - %08lx", start, end);
     start = ROUNDDOWN(start, PAGE_SIZE);
     end = ROUNDUP(end, PAGE_SIZE);
+    start /= PAGE_SIZE;
+    end /= PAGE_SIZE;
+
+    ASSERT(start <= end && end <= UINT32_MAX);
+
     for (i = 0; i < poolCnt; i++) {
-        pools[i].start = ROUNDUP(pools[i].start, PAGE_SIZE);
-        pools[i].end = ROUNDDOWN(pools[i].end, PAGE_SIZE);
         if (start <= pools[i].start && end >= pools[i].start) {
             if (verbose) {
-                printf("overlap left: %016lx - %016lx, %016lx - %016lx\n",
+                printf("overlap left: %08lx - %08lx, %08x - %08x\n",
                         start, end, pools[i].start, pools[i].end);
             }
             pools[i].start = end;
         } else if (start < pools[i].end && end >= pools[i].end) {
             if (verbose) {
-                printf("overlap right: %016lx - %016lx, %016lx - %016lx\n",
+                printf("overlap right: %08lx - %08lx, %08x - %08x\n",
                         start, end, pools[i].start, pools[i].end);
             }
             pools[i].end = start;
         } else if (start > pools[i].start && end < pools[i].end) {
             if (verbose) {
-                printf("punch hole: %016lx - %016lx, %016lx - %016lx\n",
+                printf("punch hole: %08lx - %08lx, %08x - %08x\n",
                         start, end, pools[i].start, pools[i].end);
             }
-            insert_range(end, pools[i].end);
+            insert_range_pagenum(end, pools[i].end);
             pools[i].end = start;
         }
     }
@@ -127,13 +99,39 @@ static void
 sanitize_pmm_ranges(void)
 {
     size_t i, j;
+    VA kern_start = ROUNDDOWN(START_KERNEL, PAGE_SIZE);
+    VA kern_end = ROUNDUP(END_KERNEL, PAGE_SIZE);
     VA va;
-    apply_used_range(0xb8000, 0xb9000);
-    for (va = ROUNDDOWN(START_KERNEL, PAGE_SIZE); va < ROUNDUP(END_KERNEL, PAGE_SIZE); va += PAGE_SIZE) {
-        PA pa = pagewalk(VA_TO_PTR(va));
+
+    for (va = kern_start; va < kern_end; va += PAGE_SIZE) {
+        PA pa = vtophys(VA_TO_PTR(va));
         ASSERT(pa != -1);
         apply_used_range(pa, pa + PAGE_SIZE);
     }
+    apply_used_range(0xb8000, 0xb9000);
+    for (uint64 i = 0; i < 512; i++) {
+        PA pa;
+        if ((PML4[i] & (PT_P | PT_PS)) == PT_P) {
+            pa = PT_ENTRY_TO_PA(PML4[i]);
+            apply_used_range(pa, pa + PAGE_SIZE);
+            for (uint64 j = 0; j < 512; j++) {
+                PTE pte = PML3[i * 512 + j];
+                if ((pte & (PT_PS | PT_P)) == PT_P) {
+                    pa = PT_ENTRY_TO_PA(pte);
+                    apply_used_range(pa, pa + PAGE_SIZE);
+                    for (uint64 k = 0; k < 512; k++) {
+                        PTE pte = PML2[i * 512 * 512 + j * 512 + k];
+                        if ((pte & (PT_PS | PT_P)) == PT_P) {
+                            pa = PT_ENTRY_TO_PA(pte);
+                            apply_used_range(pa, pa + PAGE_SIZE);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+
     for (i = 0; i < poolCnt; i++) {
         for (j = i + 1; j < poolCnt; j++) {
             if (pools[j].start < pools[i].start) {
@@ -144,9 +142,24 @@ sanitize_pmm_ranges(void)
         }
     }
     puts("PMM Ranges:");
-    for (i = 0; i < poolCnt; i++) {
-        printf("[ %016"PRIx64" - %016"PRIx64"]\n", pools[i].start, pools[i].end);
+    uint32 rd, wr;
+    bool onemb = false, fourgb = false;
+    for (rd = 0, wr = 0; rd < poolCnt; rd++) {
+        if (pools[rd].start < pools[rd].end) {
+            if (!onemb && pools[rd].start >= 1 * MB / PAGE_SIZE) {
+                printf("----- 1 MB -----\n");
+                onemb = true;
+            }
+            if (!fourgb && pools[rd].start >= 4ull * GB / PAGE_SIZE) {
+                printf("----- 4 GB ------\n");
+                fourgb = true;
+            }
+            printf("[ %08x - %08x] %u pages\n", pools[rd].start, pools[rd].end, (pools[rd].end - pools[rd].start));
+            pools[wr] = pools[rd];
+            wr++;
+        }
     }
+    poolCnt = wr;
 }
 
 void
@@ -159,7 +172,8 @@ pmm_init_multiboot(multiboot_info_t *mbi)
             insert_range(mmap->addr, mmap->addr + mmap->len);
         }
     }
-    apply_used_range(PTR_TO_VA(mbi), PTR_TO_VA(mbi) + sizeof *mbi);
+    vmm_earlyinit();
+    //    apply_used_range(PTR_TO_VA(mbi), PTR_TO_VA(mbi) + sizeof *mbi);
     sanitize_pmm_ranges();
 }
 
@@ -168,20 +182,22 @@ PA
 alloc_aligned_phys_pages_in_range(PA loAddr, PA hiAddr, size_t nPages, uintptr_t align)
 {
     uint32 i;
-    uint64 len = nPages * PAGE_SIZE;
 
     align = align == 0 ? PAGE_SIZE : align;
     ASSERT(IS_ALIGNED(align, PAGE_SIZE));
     loAddr = ROUNDUP(loAddr, align);
+    hiAddr /= PAGE_SIZE;
+    loAddr /= PAGE_SIZE;
+    align /= PAGE_SIZE;
     for (i = 0; i < poolCnt; i++) {
         PagePool *p = &pools[i];
         uint64 start = MAX(ROUNDUP(p->start, align), loAddr);
-        uint64 end = start + len;
+        uint64 end = start + nPages;
         if (end > hiAddr || end > p->end) {
             continue;
         }
         p->start = end;
-        return start;
+        return start * PAGE_SIZE;
     }
     return INVALID_PA;
 }
@@ -211,7 +227,10 @@ alloc_phys_page(void)
 
     ret = alloc_aligned_phys_pages_in_range(4 * GB, ~0ull, 1, 0);
     if (ret == INVALID_PA) {
-        return alloc_aligned_phys_pages_in_range(0, ~0ull, 1, 0);
+        ret = alloc_aligned_phys_pages_in_range(1 * MB, ~0ull, 1, 0);
+        if (ret == INVALID_PA) {
+            ret = alloc_aligned_phys_pages_in_range(0, ~0ull, 1, 0);
+        }
     }
     return ret;
 }

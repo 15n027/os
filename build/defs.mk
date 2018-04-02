@@ -43,8 +43,8 @@ DEBUG ?= 1
 #-ftrapv
 # -finstrument-functions
 CFLAGS := -Wall -std=gnu99 -mno-sse -mno-mmx -nostdlib -nostdinc -static \
-	-Wstack-usage=0 -ffreestanding -fbuiltin \
-# -mindirect-branch=thunk \
+	-Wstack-usage=0 -ffreestanding -fbuiltin
+#	-mindirect-branch=thunk \
 #	-mindirect-branch-register -mgeneral-regs-only -mmitigate-rop
 CPPFLAGS := -I $(OBJDIRPREFIX)/include
 LDFLAGS := -L $(LIBDIR) -nostdlib -static $(LIBGCC)

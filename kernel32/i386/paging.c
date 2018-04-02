@@ -35,18 +35,6 @@ get_paging_root(void)
 }
 
 void
-invtlb(void)
-{
-    SET_CR3(GET_CR3());
-}
-
-void
-invpage(void *va)
-{
-    asm volatile("invlpg (%0)" : : "r"(va) : "memory");
-}
-
-void
 init_4level_pagetable(void)
 {
     ASSERT(ETEXT <= S_RW_AREA);
@@ -56,7 +44,7 @@ init_4level_pagetable(void)
     ASSERT(IS_ALIGNED(PTR_TO_PA(scratch), PAGE_SIZE));
 
     pml4[PML4_OFF(scratch)] = PT_ADDR_4K(PTR_TO_PA(pml3)) | PT_RW | PT_P;
-    pml4[256] = PT_ADDR_4K(PTR_TO_PA(pml4)) | PT_RW | PT_P;
+    pml4[PT_RECURSIVE_IDX] = PT_ADDR_4K(PTR_TO_PA(pml4)) | PT_RW | PT_P;
     pml3[PML3_OFF(scratch)] = PT_ADDR_4K(PTR_TO_PA(pml2)) | PT_RW | PT_P;
     pml2[PML2_OFF(scratch)] = PT_ADDR_4K(PTR_TO_PA(pml1)) | PT_RW | PT_P;
     pml1[PML1_OFF(scratch)] = PT_ADDR_4K(PTR_TO_PA(scratch)) | PT_RW | PT_P;
@@ -131,7 +119,7 @@ map_page_with_root(VA vRoot, VA64 vBase, PA pBase, uint64 flags)
         cur = &scratch[PML_OFF(vBase, lvl)];
         if ((*cur & PT_P) == 0) {
             PA newpage = alloc_phys_page();
-            printf("alloc PT%u page %p\n", lvl, PA_TO_PTR(newpage));
+            printf("alloc PT%u page %llx\n", lvl, (uint64)(newpage));
             ASSERT(newpage != INVALID_PA);
             scratch = map_scratch(newpage);
             memset(scratch, 0, PAGE_SIZE);

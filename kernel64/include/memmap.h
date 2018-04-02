@@ -18,3 +18,35 @@ PA alloc_low_phys_page(void);
 
 PA vtophys(const void *v);
 
+typedef enum {
+    VM_AREA_USER,
+    VM_AREA_OTHER,
+    VM_AREA_HEAP,
+    VM_AREA_MGMT,
+    VM_AREA_MAX,
+} vm_area_type;
+
+typedef struct va_range {
+    VPN start, end;
+} va_range;
+
+typedef struct vma_range {
+    VPN start, end;
+    struct vma_range *next;
+} vma_range;
+
+typedef struct vma {
+    va_range free[VM_AREA_MAX];
+    vma_range *used;
+    unsigned used_cnt;
+} vma;
+
+vma *get_kern_vma(void);
+VA alloc_va_from(vma *vm, vm_area_type type, size_t n);
+VA alloc_va(vma *vm, size_t n);
+bool handle_pf(VA rip, unsigned err, VA addr);
+
+void map_pages(PA pa, VA va, size_t n);
+void map_page(PA pa, VA va);
+void unmap_page(VA va);
+void unmap_pages(VA va, size_t n);

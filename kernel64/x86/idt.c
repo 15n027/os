@@ -5,6 +5,7 @@
 #include "x86/x86_defs.h"
 #include "basic_defs.h"
 #include "kassert.h"
+#include "memmap.h"
 
 #define NOTHING()
 #define PUSHZERO() "push $0\n"
@@ -75,7 +76,12 @@ idt_common(IntrFrame64 *frame)
     printf("INT/EXC VEC: %"PRIx64" err: %"PRIx64" cs:ip %"PRIx64":%#"PRIx64"\n",
             frame->vector, frame->errcode, frame->cs, frame->rip);
     if (frame->vector == EXC_PF) {
-        printf("#PF CR2=%"PRIx64"\n", GET_CR2());
+        VA cr2 = GET_CR2();
+        printf("CR2=%016lx\n", cr2);
+        if (handle_pf(frame->rip, frame->errcode, cr2)) {
+            return;
+        }
+        printf("unhandled #PF CR2=%"PRIx64"\n", GET_CR2());
     }
     if ((frame->cs & 3) != 0) {
         printf("CPL change detected: ss:esp %08"PRIx64":%08"PRIx64"\n", frame->ss,

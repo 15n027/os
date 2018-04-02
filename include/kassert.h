@@ -10,8 +10,8 @@
     do {                                            \
         if (!(x)) {                                 \
             kverify_fail(__FILE__, __LINE__, #x);   \
-            __builtin_unreachable();                \
         }                                           \
+        __builtin_unreachable();                    \
     } while (0)
 
 #if defined(INCLUDE_ASSERTS)
@@ -19,7 +19,6 @@
     do {                                            \
         if (!(x)) {                                 \
             kassert_fail(__FILE__, __LINE__, #x);   \
-            __builtin_unreachable();                \
         }                                           \
     } while (0)
 #else
@@ -39,10 +38,14 @@
 static inline void kassert_fail(const char *filename, int line, const char *cond)
 {
     printf("ASSERT: %s:%d (%s)\n", filename, line, cond);
-    HALT();
+    for (;;)
+        HALT();
+    __builtin_unreachable();
 }
 static inline void kverify_fail(const char *filename, int line, const char *cond)
 {
     printf("VERIFY: %s:%d (%s)\n", filename, line, cond);
-    HALT();
+    for (;;)
+        HALT();
+    __builtin_unreachable();
 }

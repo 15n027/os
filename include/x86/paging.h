@@ -1,5 +1,6 @@
 #pragma once
 #include "basic_types.h"
+#include "x86/x86_defs.h"
 
 #define LA_ADDR_BITS 64
 #define PAE_4LEVEL_INDEX_BITS 9
@@ -42,3 +43,36 @@
 typedef uint64 PTE;
 
 PA pt_entry_to_pa(PTE entry);
+
+
+#define PT_RECURSIVE_IDX (256)
+#define PT_IDX_TO_VPN(l4, l3, l2, l1)                         \
+    ((int64)(                                                 \
+            (QWORD(0x000ffff0, 0) * (((unsigned)(l4)) >> 8)) | \
+            (int64)(l4) << (PAE_4LEVEL_INDEX_BITS * 3) |      \
+            (int64)(l3) << (PAE_4LEVEL_INDEX_BITS * 2) |      \
+            (int64)(l2) << (PAE_4LEVEL_INDEX_BITS * 1) |      \
+            (int64)(l1)))
+#define PT_IDX_TO_VA(l4, l3, l2, l1) ((VA)PT_IDX_TO_VPN(l4, l3, l2, l1) << PAGE_SHIFT)
+
+#define PML4 ((PTE*)PT_IDX_TO_VA(PT_RECURSIVE_IDX, PT_RECURSIVE_IDX, PT_RECURSIVE_IDX, PT_RECURSIVE_IDX))
+#define PML3 ((PTE*)PT_IDX_TO_VA(PT_RECURSIVE_IDX, PT_RECURSIVE_IDX, PT_RECURSIVE_IDX, 0))
+#define PML2 ((PTE*)PT_IDX_TO_VA(PT_RECURSIVE_IDX, PT_RECURSIVE_IDX, 0, 0))
+#define PML1 ((PTE*)PT_IDX_TO_VA(PT_RECURSIVE_IDX, 0, 0, 0))
+
+
+#define PML(lvl) ((PTE*)(PT_IDX_TO_VA(PT_RECURSIVE_IDX, PT_RECURSIVE_IDX * ((lvl) > 1), \
+                                      PT_RECURSIVE_IDX * ((lvl) > 2),   \
+                                      PT_RECURSIVE_IDX * ((lvl) > 3))))
+
+static inline void
+invtlb(void)
+{
+    SET_CR3(GET_CR3());
+}
+
+static inline void
+invpage(const void *va)
+{
+    asm volatile("invlpg (%0)" : : "r"(va) : "memory");
+}

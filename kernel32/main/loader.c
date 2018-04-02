@@ -36,10 +36,7 @@ load_module(const char *name, const void *image, size_t len)
         printf("Module %s[%u] requires %u pages from [ %llx - %llx ]\n", name, i,
                 numPages, start, end);
         ASSERT(numPages < 3 * GB / PAGE_SIZE);
-        pages = alloc_aligned_phys_pages_in_range(4 * GB, ~0ull, numPages, PAGE_SIZE);
-        if (pages == INVALID_PA) {
-            pages = alloc_phys_pages(numPages);
-        }
+        pages = alloc_phys_pages(numPages);
         ASSERT(pages != INVALID_PA);
         if ((phdr->p_flags & PF_X) == 0) {
             perms |= PT_NX;

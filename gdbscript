@@ -1,4 +1,4 @@
-file obj/targets/kernel32.elf
+file obj/targets/kernel64.elf
 #set architecture i386:x64-32
 set architecture i386:x86-64
 target remote :1234

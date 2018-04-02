@@ -6,22 +6,187 @@
 #include "x86/paging.h"
 #include "kernel.h"
 
-PA
-vtophys(const void *v)
-{
+static const va_range va_ranges[] = {
+    [VM_AREA_OTHER] = {PT_IDX_TO_VA(384, 0, 0, 0), PT_IDX_TO_VA(385, 0, 0, 0)},
+    [VM_AREA_HEAP] = {PT_IDX_TO_VA(260, 0, 0, 0), PT_IDX_TO_VA(261, 0, 0, 0)},
+    [VM_AREA_MGMT] = {PT_IDX_TO_VA(261, 0, 0, 0), PT_IDX_TO_VA(261, 0, 1, 0)},
+    [VM_AREA_USER] = {PT_IDX_TO_VA(0, 0, 0, 256), PT_IDX_TO_VA(128, 0, 0, 0)},
+};
 
-    return 0;
+static vma kern_vma;
+
+vma *
+get_kern_vma(void)
+{
+    return &kern_vma;
+}
+
+VA
+alloc_va_from(vma *vm, vm_area_type type, size_t n)
+{
+    VA ret;
+    va_range *r;
+    vma_range *u;
+    ASSERT(type >= 0 && type != VM_AREA_MGMT && type < VM_AREA_MAX);
+    ASSERT(vm->used_cnt + 1 < (vm->free[VM_AREA_MGMT].end - vm->free[VM_AREA_MGMT].start) / sizeof *vm->used);
+    r = &vm->free[type];
+    if (r->end - r->start < n) {
+        return 0;
+    }
+    ret = r->start;
+    r->start += n * PAGE_SIZE;
+    u = &vm->used[vm->used_cnt];
+    vm->used_cnt++;
+    u->start = ret;
+    u->end = ret + n * PAGE_SIZE;
+    return ret;
+}
+
+VA
+alloc_va(vma *vm, size_t n)
+{
+    return alloc_va_from(vm, VM_AREA_OTHER, n);
+}
+
+PA
+vtophys(const void *p)
+{
+    PA ret;
+    uint32 i;
+    PTE pte;
+    uint64 off = 0;
+
+    for (i = 4; i > 0; i--) {
+        off = off * 512 + PML_OFF((VA)p, i);
+        pte = PML(i)[off];
+        if ((pte & PT_P) == 0) {
+            //         DBG("%p NP", p);
+            // ASSERT(0);
+            return -1;
+        }
+        if (pte & PT_PS) {
+            ret = pte & ~(PT_NX | LPAGE_MASK);
+            return ret;
+        }
+    }
+    ret = pte & ~(PT_NX | PAGE_MASK);
+    return ret;
+}
+
+void
+vmm_earlyinit(void)
+{
+    // Clear 32 bit kernel entries
+    for (uint32 i = 1; i < 256; i++) {
+        PML4[i] = 0;
+    }
+    for (uint32 lvl = 3; lvl > 0; lvl--) {
+        for (uint32 i = 0; i < 512; i++) {
+            if (i != PML_OFF(0xb8000, lvl)) {
+                PML(lvl)[i] = 0;
+            }
+        }
+    }
+    invtlb();
 }
 
 void
 vmm_init(void)
 {
+    memcpy(kern_vma.free, va_ranges, sizeof va_ranges);
+    kern_vma.used = (void*)va_ranges[VM_AREA_MGMT].start;
+    kern_vma.used_cnt = 0;
+    printf("VA ranges:\n");
+    for (size_t i = 0; i < ARRAYSIZE(kern_vma.free); i++) {
+        printf("[%016lx - %016lx]\n", kern_vma.free[i].start, kern_vma.free[i].end);
+    }
 }
 
-void vmm_earlyinit(void)
+void unmap_page(VA va)
 {
-    //PA cr3 = GET_CR3();
-    //void *scratch = earlyheap_alloc(4);
-    //ASSERT(scratch != NULL);
-    //    clone_paging_root(cr3, scratch);
+    PTE *pte;
+    int lvl;
+    for (lvl = 4; lvl > 0; lvl--) {
+        pte = &PML(lvl)[PML_OFF(va, lvl)];
+        if ((*pte & PT_P) == 0) {
+            break;
+        }
+    }
+    if (lvl == 1) {
+        *pte = 0;
+        invpage((void*)va);
+    }
+}
+
+void
+map_pages(PA pa, VA va, size_t n)
+{
+    static uint8 scratch[PAGE_SIZE] ALIGNED(PAGE_SIZE);
+    uint32 lvl;
+    PTE *pte;
+    uint64 off = 0;
+    //    DBG("scratch=%p", scratch);
+    for (lvl = 4; lvl > 1; lvl--) {
+        off = off * 512 + PML_OFF(va, lvl);
+        pte = &PML(lvl)[off];
+        //        DBG("lvl %u pte=%08lx", lvl, *pte);
+        if ((*pte & PT_P) == 0) {
+            PA pa = alloc_phys_page();
+            ASSERT(va != (VA)scratch);
+            //            DBG("new pt page lvl %u pte=%p pa=%lx", lvl - 1, pte, pa);
+            map_page(pa, (VA)scratch);
+
+            memset(scratch, 0, PAGE_SIZE);
+            *pte = PT_ADDR_4K(pa) | PT_P | PT_RW;
+
+            invtlb();
+        }
+    }
+    PML1[off * 512 + PML1_OFF(va)] = PT_ADDR_4K(pa) | PT_P | PT_RW | PT_NX;
+    invpage((void*)va);
+    if (va != (VA)scratch) {
+        unmap_page((VA)scratch);
+    }
+}
+
+
+void
+map_page(PA pa, VA va)
+{
+    map_pages(pa, va, 1);
+    invpage((void*)va);
+}
+
+bool
+handle_pf(VA rip, unsigned err, VA addr)
+{
+    static bool inpf;
+    PA pa = INVALID_PA;
+    vma *vm = get_kern_vma();
+    ASSERT(!inpf);
+    inpf=1;
+    if (addr >= va_ranges[VM_AREA_MGMT].start && addr < va_ranges[VM_AREA_MGMT].end) {
+        size_t used_sz = vm->used_cnt * sizeof *vm->used;
+        if (va_ranges[VM_AREA_MGMT].start + used_sz < addr) {
+            inpf = 0;
+            return false;
+        }
+        pa = alloc_phys_page();
+        DBG("alloc mgmt page: va=%lx pa=%lx", addr, pa);
+    } else {
+        for (size_t i = 0; i < vm->used_cnt; i++) {
+            if (addr >= vm->used[i].start && addr < vm->used[i].end) {
+                pa = alloc_phys_page();
+                break;
+            }
+        }
+    }
+    if (pa == INVALID_PA) {
+        inpf = 0;
+        return false;
+    }
+    map_page(pa, addr & ~PAGE_MASK);
+    inpf = 0;
+    printf("#PF resolved\n");
+    return true;
 }
