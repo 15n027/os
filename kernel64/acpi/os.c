@@ -117,7 +117,7 @@ AcpiOsSignalSemaphore (
 
 UINT64 AcpiOsGetTimer(void)
 {
-    NOT_IMPLEMENTED();
+    //    NOT_IMPLEMENTED();
     return 0;
 }
 
@@ -128,7 +128,7 @@ AcpiOsReadPciConfiguration (
         UINT64 *Value,
         UINT32 Width)
 {
-    NOT_IMPLEMENTED();
+    //    NOT_IMPLEMENTED();
     return AE_OK;
 }
 
@@ -139,7 +139,7 @@ AcpiOsWritePciConfiguration (
     UINT64                  Value,
     UINT32                  Width)
 {
-    NOT_IMPLEMENTED();
+    //    NOT_IMPLEMENTED();
     return AE_OK;
 }
 
@@ -161,7 +161,7 @@ AcpiOsMapMemory (
     ACPI_SIZE len = PAGES_SPANNED(Where, Where + Length);
     VA va = alloc_va_from(get_kern_vma(), VM_AREA_ACPI, len);
     ASSERT(va != 0);
-    map_pages(pa, va, len);
+    map_pages(pa, va, len, PT_NX);
     //    printf("%s: %lx (%lx) -> %lx Length=0x%lx len=0x%lx\n", __func__, Where, pa, va, Length, len);
     va |= (Where & PAGE_MASK);
     return (void*)va;

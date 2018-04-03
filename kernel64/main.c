@@ -7,6 +7,7 @@
 #include "x86/x86_defs.h"
 #include <stdlib.h>
 #include <acpica/acpi.h>
+#include "acpi.h"
 
 void cpu_init(void);
 void
@@ -29,27 +30,6 @@ print_mmap(const multiboot_info_t *mbi)
     }
 }
 
-static void
-init_acpi(void)
-{
-    ACPI_TABLE_MADT *apic, *srat;
-    ACPI_STATUS s;
-    AcpiInitializeSubsystem();
-    s = AcpiInitializeTables(NULL, 0, true);
-    ASSERT(ACPI_SUCCESS(s));
-    s = AcpiLoadTables();
-    ASSERT(ACPI_SUCCESS(s));
-    s = AcpiEnableSubsystem(ACPI_FULL_INITIALIZATION);
-    printf("s=%x\n", s);
-    ASSERT(ACPI_SUCCESS(s));
-    s = AcpiGetTable(ACPI_SIG_MADT, 1, (ACPI_TABLE_HEADER**)&apic);
-    ASSERT(ACPI_SUCCESS(s));
-    printf("madt=%p addr=%x len=%u\n", apic, apic->Address, apic->Header.Length);
-    s = AcpiGetTable(ACPI_SIG_SRAT, 1, (ACPI_TABLE_HEADER**)&srat);
-    ASSERT(ACPI_SUCCESS(s));
-    printf("srat=%p len=%u\n", srat, srat->Header.Length);
-
-}
 
 void pic_init(void);
 

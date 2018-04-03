@@ -186,9 +186,9 @@ alloc_aligned_phys_pages_in_range(PA loAddr, PA hiAddr, size_t nPages, uintptr_t
     align = align == 0 ? PAGE_SIZE : align;
     ASSERT(IS_ALIGNED(align, PAGE_SIZE));
     loAddr = ROUNDUP(loAddr, align);
-    hiAddr /= PAGE_SIZE;
-    loAddr /= PAGE_SIZE;
-    align /= PAGE_SIZE;
+    hiAddr >>= PAGE_SHIFT;
+    loAddr >>= PAGE_SHIFT;
+    align >>= PAGE_SHIFT;
     for (i = 0; i < poolCnt; i++) {
         PagePool *p = &pools[i];
         uint64 start = MAX(ROUNDUP(p->start, align), loAddr);
@@ -197,7 +197,7 @@ alloc_aligned_phys_pages_in_range(PA loAddr, PA hiAddr, size_t nPages, uintptr_t
             continue;
         }
         p->start = end;
-        return start * PAGE_SIZE;
+        return start << PAGE_SHIFT;
     }
     return INVALID_PA;
 }

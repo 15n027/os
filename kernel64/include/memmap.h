@@ -5,7 +5,6 @@
 typedef uint64 PFN;
 #define INVALID_PFN (0x8000000000000000ull)
 
-void map_page_local(VA va, PA pa, uint64 flags);
 void vmm_init(void);
 void vmm_earlyinit(void);
 void pmm_init_multiboot(multiboot_info_t *mbi);
@@ -47,7 +46,7 @@ VA alloc_va_from(vma *vm, vm_area_type type, size_t n);
 VA alloc_va(vma *vm, size_t n);
 bool handle_pf(VA rip, unsigned err, VA addr);
 
-void map_pages(PA pa, VA va, uint32 n);
-void map_page(PA pa, VA va);
+void map_pages(PA pa, VA va, uint32 n, uint64 flags);
+void map_page(PA pa, VA va, uint64 flags);
 void unmap_page(VA va);
 void unmap_pages(VA va, uint32 n);

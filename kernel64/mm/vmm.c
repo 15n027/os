@@ -11,7 +11,7 @@ static const va_range va_ranges[] = {
     [VM_AREA_HEAP] = {PT_IDX_TO_VA(260, 0, 0, 0), PT_IDX_TO_VA(261, 0, 0, 0)},
     [VM_AREA_MGMT] = {PT_IDX_TO_VA(261, 0, 0, 0), PT_IDX_TO_VA(261, 0, 1, 0)},
     [VM_AREA_USER] = {PT_IDX_TO_VA(0, 0, 0, 256), PT_IDX_TO_VA(128, 0, 0, 0)},
-    [VM_AREA_ACPI] = {PT_IDX_TO_VA(32, 0, 0, 0), PT_IDX_TO_VA(32, 0, 511, 0)},
+    [VM_AREA_ACPI] = {PT_IDX_TO_VA(0, 511, 511, 0), PT_IDX_TO_VA(0, 511, 511, 511)},
 };
 
 static vma kern_vma;
@@ -133,7 +133,7 @@ void unmap_page(VA va)
 }
 
 static void
-map_page_int(PA pa, VA va)
+map_page_int(PA pa, VA va, uint64 flags)
 {
     static uint8 scratch[PAGE_SIZE] ALIGNED(PAGE_SIZE);
     uint32 lvl;
@@ -148,7 +148,7 @@ map_page_int(PA pa, VA va)
             PA pa = alloc_phys_page();
             ASSERT(va != (VA)scratch);
             //            DBG("new pt page lvl %u pte=%p pa=%lx", lvl - 1, pte, pa);
-            map_page(pa, (VA)scratch);
+            map_page(pa, (VA)scratch, PT_RW | PT_NX);
 
             memset(scratch, 0, PAGE_SIZE);
             *pte = PT_ADDR_4K(pa) | PT_P | PT_RW;
@@ -156,43 +156,39 @@ map_page_int(PA pa, VA va)
             invtlb();
         }
     }
-    PML1[off * 512 + PML1_OFF(va)] = PT_ADDR_4K(pa) | PT_P | PT_RW | PT_NX;
+    PML1[off * 512 + PML1_OFF(va)] = PT_ADDR_4K(pa) | PT_P | flags;
     if (va != (VA)scratch) {
         unmap_page((VA)scratch);
     }
 }
 
 void
-map_pages(PA pa, VA va, uint32 n)
+map_pages(PA pa, VA va, uint32 n, uint64 flags)
 {
     for (uint32 i = 0; i < n; i++) {
-        map_page_int(pa, va);
+        map_page_int(pa, va, flags);
         pa += PAGE_SIZE;
         va += PAGE_SIZE;
     }
     invtlb();
 }
 void
-map_page(PA pa, VA va)
+map_page(PA pa, VA va, uint64 flags)
 {
-    map_page_int(pa, va);
+    map_page_int(pa, va, flags);
     invpage((void*)va);
 }
 
 bool
 handle_pf(VA rip, unsigned err, VA addr)
 {
-    static bool inpf;
     PA pa = INVALID_PA;
     uint32 i;
     vma *vm = get_kern_vma();
-    ASSERT(!inpf);
-    inpf=1;
     if (addr >= va_ranges[VM_AREA_MGMT].start && addr < va_ranges[VM_AREA_MGMT].end) {
     ASSERT(addr > 0xffff800000000000ull);
         size_t used_sz = vm->used_cnt * sizeof *vm->used;
         if (va_ranges[VM_AREA_MGMT].start + used_sz < addr) {
-            inpf = 0;
             return false;
         }
         pa = alloc_phys_page();
@@ -207,10 +203,8 @@ handle_pf(VA rip, unsigned err, VA addr)
         }
     }
     if (pa == INVALID_PA) {
-        inpf = 0;
         return false;
     }
-    map_page(pa, addr & ~PAGE_MASK);
-    inpf = 0;
+    map_page(pa, addr & ~PAGE_MASK, PT_RW | PT_NX);
     return true;
 }
