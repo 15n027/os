@@ -66,11 +66,13 @@ Regs64 farjump_to_64_ctx;
 void farjump_to_64(const Regs64 *regs)
 {
     extern const char tramp64[];
+    BaseLimit32 null_idtr = {0};
     FarPtr32 fptr = {.cs = DT_KERN64_CODE_SEL, .ip = PTR_TO_PA(tramp64)};
     farjump_to_64_ctx = *regs;
     farjump_to_64_target = regs->rip;
     asm volatile(
-        "ljmp *%0\n"
+        "lidt %0\n"
+        "ljmp *%1\n"
         ".code64\n"
         ".globl tramp64\n"
         "tramp64:\n"
@@ -92,6 +94,6 @@ void farjump_to_64(const Regs64 *regs)
         "mov 0x38(%%rdi), %%rdi\n"
         "jmp *farjump_to_64_target(%%rip)\n"
         ".code32\n"
-        : : "m"(fptr), "D"(regs));
+        : : "m" (null_idtr), "m"(fptr), "D"(regs));
     NOT_REACHED();
 }

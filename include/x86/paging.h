@@ -35,6 +35,12 @@
 #define PT_RW  (1ull << PT_RW_SHIFT)
 #define PT_P   (1ull << PT_P_SHIFT)
 
+#define PT_ERR_P 1
+#define PT_ERR_W 2
+#define PT_ERR_U 4
+#define PT_ERR_R 8
+#define PT_ERR_I 0x10
+
 #define PT_ENTRY_TO_PA(entry) pt_entry_to_pa(entry)
 
 #define PT_ADDR_4K(pa) ((pa) & ~PAGE_MASK)

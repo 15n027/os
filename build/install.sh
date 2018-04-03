@@ -15,7 +15,7 @@ for target in "$@"; do
     if [ "$VERBOSE" -gt 1 ]; then
         echo install -m 644 -D -t "$DESTDIR" "$target"
     elif [ "$VERBOSE" -eq 1 ]; then
-        echo "Installing $treal -> $DISPDESTDIR"
+       echo "Installing $treal -> $DISPDESTDIR"
     fi
     install -m 644 -D -t "$DESTDIR" "$target"
 done

@@ -38,7 +38,6 @@ TARGETDIR := $(TOPDIR)/$(OBJTOPDIR)/targets
 INSTALL := $(TOPDIR)/build/install.sh $(VERBOSE) $(OBJDIRPREFIX)/..
 INSTALLLIB := $(INSTALL) $(LIBDIR)
 INSTALLTARGET := $(INSTALL) $(TARGETDIR)
-
 DEBUG ?= 1
 #-ftrapv
 # -finstrument-functions
@@ -46,7 +45,7 @@ CFLAGS := -Wall -std=gnu99 -mno-sse -mno-mmx -nostdlib -nostdinc -static \
 	-Wstack-usage=0 -ffreestanding -fbuiltin
 #	-mindirect-branch=thunk \
 #	-mindirect-branch-register -mgeneral-regs-only -mmitigate-rop
-CPPFLAGS := -I $(OBJDIRPREFIX)/include
+CPPFLAGS := -I $(OBJDIRPREFIX)/include -D__JWOS__
 LDFLAGS := -L $(LIBDIR) -nostdlib -static $(LIBGCC)
 
 ifeq ($(DEBUG), 0)

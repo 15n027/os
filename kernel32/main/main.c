@@ -16,13 +16,6 @@
 
 void earlyconsole_init(void);
 
-static void
-init_pic(void)
-{
-    asm("outb %0, $0xa1\n"
-        "outb %0, $0x21\n"
-        :: "a"((uint8)0xff));
-}
 
 static void
 init_phys_map(multiboot_info_t *mbi)
@@ -58,7 +51,6 @@ init_phys_map(multiboot_info_t *mbi)
 
 void kern_entry(uint32_t mbsig, multiboot_info_t *mbi)
 {
-    init_pic();
     earlyconsole_init();
     if (mbsig != MULTIBOOT_BOOTLOADER_MAGIC) {
         printf("32->64 loader wasn't loaded via multiboot.\n");
@@ -93,6 +85,7 @@ void kern_entry(uint32_t mbsig, multiboot_info_t *mbi)
         map_pages(mbi->mods_addr, mbi->mods_addr,
                 PAGES_SPANNED(mbi->mods_addr, mbi->mods_addr + mbi->mods_count * sizeof *mods),
                 PT_NX | PT_P);
+        ASSERT(mbi->mods_count == 1);
         for (uint32 i = 0; i < mbi->mods_count; i++) {
             uint64 entry;
             Regs64 handoff = {0};

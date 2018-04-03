@@ -23,6 +23,7 @@ typedef enum {
     VM_AREA_OTHER,
     VM_AREA_HEAP,
     VM_AREA_MGMT,
+    VM_AREA_ACPI,
     VM_AREA_MAX,
 } vm_area_type;
 
@@ -46,7 +47,7 @@ VA alloc_va_from(vma *vm, vm_area_type type, size_t n);
 VA alloc_va(vma *vm, size_t n);
 bool handle_pf(VA rip, unsigned err, VA addr);
 
-void map_pages(PA pa, VA va, size_t n);
+void map_pages(PA pa, VA va, uint32 n);
 void map_page(PA pa, VA va);
 void unmap_page(VA va);
-void unmap_pages(VA va, size_t n);
+void unmap_pages(VA va, uint32 n);

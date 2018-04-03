@@ -4,7 +4,9 @@
 #include "debug.h"
 #include "multiboot/multiboot.h"
 #include "memmap.h"
+#include "x86/x86_defs.h"
 #include <stdlib.h>
+#include <acpica/acpi.h>
 
 void cpu_init(void);
 void
@@ -27,34 +29,46 @@ print_mmap(const multiboot_info_t *mbi)
     }
 }
 
+static void
+init_acpi(void)
+{
+    ACPI_TABLE_MADT *apic, *srat;
+    ACPI_STATUS s;
+    AcpiInitializeSubsystem();
+    s = AcpiInitializeTables(NULL, 0, true);
+    ASSERT(ACPI_SUCCESS(s));
+    s = AcpiLoadTables();
+    ASSERT(ACPI_SUCCESS(s));
+    s = AcpiEnableSubsystem(ACPI_FULL_INITIALIZATION);
+    printf("s=%x\n", s);
+    ASSERT(ACPI_SUCCESS(s));
+    s = AcpiGetTable(ACPI_SIG_MADT, 1, (ACPI_TABLE_HEADER**)&apic);
+    ASSERT(ACPI_SUCCESS(s));
+    printf("madt=%p addr=%x len=%u\n", apic, apic->Address, apic->Header.Length);
+    s = AcpiGetTable(ACPI_SIG_SRAT, 1, (ACPI_TABLE_HEADER**)&srat);
+    ASSERT(ACPI_SUCCESS(s));
+    printf("srat=%p len=%u\n", srat, srat->Header.Length);
+
+}
+
+void pic_init(void);
+
 void
 kern_entry(uint32 mbsig, multiboot_info_t *mbi)
 {
-    asm("sti");
     earlyconsole_init();
     puts("made it to 64 bit mode woot");
+    pic_init();
     cpu_init();
+    asm("sti");
     printf("mbsig=%x mbi=%p\n", mbsig, mbi);
     if (mbsig == MULTIBOOT_BOOTLOADER_MAGIC) {
         print_mmap(mbi);
         pmm_init_multiboot(mbi);
     }
     vmm_init();
-    uint8 *va;
-    printf("attempt memalign\n");
-    va = malloc(PAGE_SIZE);
+    init_acpi();
 
-    printf("memalign returns %p\n", va);
-    *va = 123;
-    printf("survived malloc\n");
-    free(va);
-    va = malloc(100);
-    printf("malloc returns %p\n", va);
-    *va = 123;
-    printf("survived malloc\n");
-    HALT();
-    va = (void*)alloc_va(get_kern_vma(), 1);
-    *va = 0;
     asm("int3\n");
     HALT();
 }

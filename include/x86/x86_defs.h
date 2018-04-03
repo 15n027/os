@@ -1,4 +1,5 @@
 #pragma once
+#include "basic_types.h"
 #include "basic_defs.h"
 #include <limits.h>
 #ifndef PAGE_SIZE
@@ -110,4 +111,51 @@ static inline void SET_CR(uint32 cr, uintptr_t val)
         NOT_REACHED();
     }
 #undef SET_CRX
+}
+
+static inline uint64 RDTSC(void)
+{
+    uint32 eax, edx;
+    asm volatile ("rdtsc\n" : "=a"(eax), "=d"(edx) :: "memory");
+    return QWORD(edx, eax);
+}
+static inline void PAUSE(void)
+{
+    asm("pause\n");
+}
+
+static inline uint8 INB(uint16 port)
+{
+    uint8 val;
+    asm volatile("inb %%dx, %%al" : "=a"(val) : "d"(port) : "memory");
+    return val;
+}
+
+static inline uint16 INW(uint16 port)
+{
+    uint16 val;
+    asm volatile("inw %%dx, %%ax" : "=a"(val) : "d"(port) : "memory");
+    return val;
+}
+
+static inline uint32 IND(uint16 port)
+{
+    uint32 val;
+    asm volatile("inl %%dx, %%eax" : "=a"(val) : "d"(port) : "memory");
+    return val;
+}
+
+static inline void OUTB(uint16 port, uint8 val)
+{
+    asm volatile("outb %%al, %%dx" :: "a"(val), "d"(port) : "memory");
+}
+
+static inline void OUTW(uint16 port, uint16 val)
+{
+    asm volatile("outw %%ax, %%dx" :: "a"(val), "d"(port) : "memory");
+}
+
+static inline void OUTD(uint16 port, uint32 val)
+{
+    asm volatile("outl %%eax, %%dx" :: "a"(val), "d"(port) : "memory");
 }
