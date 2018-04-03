@@ -1,22 +1,34 @@
-#
-# Common make for acpica tools and utilities
-#
 
-#
-# Note: This makefile is intended to be used from within the native
-# ACPICA directory structure, from under top level acpica directory.
-# It specifically places all the object files for each tool in separate
-# generate/unix subdirectories, not within the various ACPICA source
-# code directories. This prevents collisions between different
-# compilations of the same source file with different compile options.
-#
+TOPDIR ?= ..
+include $(TOPDIR)/build/defs.mk
 
-ifeq ($(OS),efi)
-	BUILD_DIRECTORY_PATH = "generate/efi"
-	include generate/efi/Makefile.config
-	include generate/efi/Makefile.common
-else
-	BUILD_DIRECTORY_PATH = "generate/unix"
-	include generate/unix/Makefile.config
-	include generate/unix/Makefile.common
-endif
+SRCS := \
+	 $(wildcard source/components/dispatcher/*.c) \
+	 $(wildcard source/components/executer/*.c) \
+	 $(wildcard source/components/namespace/*.c) \
+	 $(wildcard source/components/resources/*.c) \
+	 $(wildcard source/components/utilities/*.c) \
+	 $(wildcard source/components/events/*.c) \
+	 $(wildcard source/components/hardware/*.c) \
+	 $(wildcard source/components/parser/*.c) \
+	 $(wildcard source/components/tables/*.c)
+
+HDRS := $(wildcard source/include/*.h)
+PHDRS := $(wildcard source/include/platform/*.h)
+ACPICALIB := $(OBJDIR)/libacpica.a
+
+CPPFLAGS += -Isource/include -I$(TOPDIR)/include
+
+include $(TOPDIR)/build/pre-targets.mk
+
+all: headers $(ACPICALIB)
+
+$(ACPICALIB): $(OBJS) headers
+	@$(AR) -rc $(ACPICALIB) $(OBJS)
+	@$(INSTALLLIB) $(ACPICALIB)
+
+headers:
+	$(INSTALL) $(OBJDIRPREFIX)/include/acpica $(HDRS)
+	$(INSTALL) $(OBJDIRPREFIX)/include/acpica/platform $(PHDRS)
+
+include $(TOPDIR)/build/post.mk
