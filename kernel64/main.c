@@ -40,7 +40,6 @@ kern_entry(uint32 mbsig, multiboot_info_t *mbi)
     puts("made it to 64 bit mode woot");
     pic_init();
     cpu_init();
-    asm("sti");
     printf("mbsig=%x mbi=%p\n", mbsig, mbi);
     if (mbsig == MULTIBOOT_BOOTLOADER_MAGIC) {
         print_mmap(mbi);
@@ -48,7 +47,12 @@ kern_entry(uint32 mbsig, multiboot_info_t *mbi)
     }
     vmm_init();
     init_acpi();
-
+    void init_ioapic(void);
+    init_ioapic();
+    void init_apic(void);
+    init_apic();
+    ENABLE_INTERRUPTS();
+    for(;;) asm("hlt");
     asm("int3\n");
     HALT();
 }

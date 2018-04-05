@@ -50,9 +50,9 @@ LDFLAGS := -L $(LIBDIR) -nostdlib -static $(LIBGCC)
 
 ifeq ($(DEBUG), 0)
 CFLAGS += -fomit-frame-pointer -Os
-else
+elsex
 CFLAGS += -DINCLUDE_ASSERTS -fverbose-asm
-CFLAGS += -fno-omit-frame-pointer -O
+CFLAGS += -fno-omit-frame-pointer -O2
 endif
 CFLAGS += -g -ggdb -g3
 

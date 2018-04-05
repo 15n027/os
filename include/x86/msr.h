@@ -20,17 +20,15 @@
 static inline uint64 RDMSR(uint32 msr)
 {
     uint32 eax, edx;
-    asm("rdmsr"
-            : "=a"(eax), "=d"(edx)
-            : "c"(msr));
+    asm ("rdmsr" : "=a"(eax), "=d"(edx) : "c"(msr) : "memory");
     return QWORD(edx, eax);
 }
 
 static inline void WRMSR(uint32 msr, uint64 val)
 {
-    asm("wrmsr"
-            :
-            : "d"((uint32)HIDWORD(val)), "a"((uint32)LODWORD(val)), "c"(msr));
+    uint32 a = LODWORD(val);
+    uint32 d = HIDWORD(val);
+    asm ("wrmsr" :: "a"(a), "d"(d), "c"(msr) : "memory");
 }
 
 static inline uint64 GET_EFER(void)

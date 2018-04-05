@@ -5,18 +5,22 @@ shift
 
 FILENAME=
 args=( "$@" )
-
+if [ "$DEBUG" = "1" ]; then
+    dbg="DEBUG"
+else
+    dbg="RELEASE"
+fi
 for i in $(seq ${#args[*]}); do
     arg="${args[$i]}"
     case "$arg" in
         *.c)
-            MSG="Compiling $arg"
+            MSG="Compiling ($ARCH, $dbg) $arg"
             ;;
         *.[Ss])
-            MSG="Assembling $arg"
+            MSG="Assembling ($ARCH, $dbg) $arg"
             ;;
         *.elf)
-            MSG="Linking $arg"
+            MSG="Linking ($ARCH, $dbg) $arg"
             ;;
         *.[od])
             mkdir -p `dirname "$arg"`

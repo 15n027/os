@@ -159,3 +159,57 @@ static inline void OUTD(uint16 port, uint32 val)
 {
     asm volatile("outl %%eax, %%dx" :: "a"(val), "d"(port) : "memory");
 }
+
+static inline void ENABLE_INTERRUPTS(void)
+{
+    asm volatile("sti" ::: "memory");
+}
+
+static inline void DISABLE_INTERRUPTS(void)
+{
+    asm volatile("cli" ::: "memory");
+}
+
+static inline void MMIO_WRITE8(uint8 *x, uint8 val)
+{
+    asm ("movb %1, %0" :: "m"(*(x)), "rcK"(val) : "memory");
+}
+static inline void MMIO_WRITE16(uint16 *x, uint16 val)
+{
+    asm ("movw %1, %0" :: "m"(*(x)), "rcK"(val) : "memory");
+}
+static inline void MMIO_WRITE32(uint32 *x, uint32 val)
+{
+    asm ("movl %1, %0" :: "m"(*(x)), "rcK"(val) : "memory");
+}
+static inline void MMIO_WRITE64(uint64 *x, uint64 val)
+{
+    asm ("movq %1, %0" :: "m"(*(x)), "g"(val) : "memory");
+}
+
+
+static inline uint8 MMIO_READ8(uint8 *x)
+{
+    uint8 ret;
+    asm ("movb %1, %0" : "=g"(ret) : "m"(*(x)) : "memory");
+    return ret;
+}
+
+static inline uint16 MMIO_READ16(uint16 *x)
+{
+    uint8 ret;
+    asm ("movw %1, %0" : "=g"(ret) : "m"(*(x)) : "memory");
+    return ret;
+}
+static inline uint32 MMIO_READ32(uint32 *x)
+{
+    uint32 ret;
+    asm ("movl %1, %0" : "=g"(ret) : "m"(*(x)) : "memory");
+    return ret;
+}
+static inline uint64 MMIO_READ64(uint64 *x)
+{
+    uint64 ret;
+    asm ("movq %1, %0" : "=g"(ret) : "m"(*(x)) : "memory");
+    return ret;
+}

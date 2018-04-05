@@ -180,11 +180,13 @@ map_page(PA pa, VA va, uint64 flags)
 }
 
 bool
-handle_pf(VA rip, unsigned err, VA addr)
+handle_pf(IntrFrame64 *frame)
 {
     PA pa = INVALID_PA;
     uint32 i;
+    VA addr = GET_CR2();
     vma *vm = get_kern_vma();
+
     if (addr >= va_ranges[VM_AREA_MGMT].start && addr < va_ranges[VM_AREA_MGMT].end) {
     ASSERT(addr > 0xffff800000000000ull);
         size_t used_sz = vm->used_cnt * sizeof *vm->used;

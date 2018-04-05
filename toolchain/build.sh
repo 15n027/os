@@ -1,50 +1,44 @@
 #!/bin/bash -x
 
+LOG=/dev/null
 GCC=gcc
-#GCC=gcc-8-20180121
-BINUTILS=binutils-2.29
+BINUTILS=binutils
 
+JOBS=6
 INSTALLDIR=`pwd`/installed
-export CFLAGS="-O2 -pipe -fomit-frame-pointer"
+export CFLAGS="-O3 -pipe -fomit-frame-pointer"
 export CXXFLAGS=${CFLAGS}
 BINUTILSFLAGS="--prefix=${INSTALLDIR} --disable-multilib --enable-bootstrap=no --enable-lto --disable-bootstrap  --enable-compressed-debug-sections=all --with-sysroot --enable-host-shared --enable-vtable-verify"
 GCCFLAGS="--prefix=${INSTALLDIR} --enable-ld=yes --enable-languages=c,c++ --disable-libstdcxx --disable-bootstrap --disable-libssp --disable-libquadmath --disable-libada"
-
-if [ 0 -eq 1 ]; then
-
-rm -rf ${BINUTILS}
-tar -xf ${BINUTILS}.tar.xz
-pushd ${BINUTILS}
-./configure $BINUTILSFLAGS --target=i686-elf \
-&& make -j 4 && make install
-popd
-rm -rf ${BINUTILS}
-
-tar -xf ${BINUTILS}.tar.xz
-pushd ${BINUTILS}
-./configure $BINUTILSFLAGS --target=x86_64-elf \
-&& make -j 4 && make install
-popd
-rm -rf ${BINUTILS}
-
-fi
-
 BUILDDIR=build-dir
-#rm -rf ${GCC}
-#tar -xf ${GCC}.tar.xz
-rm -rf ${BUILDDIR}
-mkdir -p ${BUILDDIR}
-pushd ${BUILDDIR}
-../${GCC}/configure $GCCFLAGS --target=i686-elf \
-&& make -j 4 && make install
-popd
-rm -rf ${BUILDDIR}
+ARCHES="i686-elf x86_64-elf"
 
-#rm -rf ${GCC}
-#tar -xf ${GCC}.tar.xz
+for arch in $ARCHES; do
+echo "Begin binutils $arch"
+pushd ${BINUTILS}
+git clean -f -d > $LOG
+./configure $BINUTILSFLAGS --target=$arch >& $LOG \
+&& make -j $JOBS >& $LOG && make install >& $LOG
+if [ $? -eq 0 ]; then
+	echo "binutils $arch done"
+else
+	echo "binutils $arch fail" && exit 1
+fi
+popd
+done
+
+for arch in $ARCHES; do
+echo "Begin GCC $arch"
+rm -rf ${BUILDDIR}
 mkdir -p ${BUILDDIR}
 pushd ${BUILDDIR}
-../${GCC}/configure $GCCFLAGS --target=x86_64-elf \
-&& make -j 4 && make install
+../${GCC}/configure $GCCFLAGS --target=$arch >& $LOG \
+&& make -j $JOBS >& $LOG && make install >& $LOG
+if [ $? -eq 0 ]; then
+	echo "gcc $arch done"
+else
+	echo "gcc $arch fail" && exit 1
+fi
 popd
-rm -rf ${BUILDDIR}
+done
+

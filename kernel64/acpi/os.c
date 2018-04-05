@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include "memmap.h"
 #include "x86/paging.h"
+#include "interrupt.h"
 
 void AcpiOsPrintf(const char *fmt, ...)
 {
@@ -285,15 +286,21 @@ AcpiOsWriteMemory (
     return AE_OK;
 }
 
+static bool
+acpi_handler(IntrFrame64 *frame)
+{
+    printf("%s: vec=%lu\n", __func__, frame->vector);
+    return true;
+}
+
 ACPI_STATUS
 AcpiOsInstallInterruptHandler (
     UINT32                  InterruptNumber,
     ACPI_OSD_HANDLER        ServiceRoutine,
     void                    *Context)
 {
+    install_handler(InterruptNumber + 32, acpi_handler);
     printf("%s: %u %p %p\n", __func__, InterruptNumber, ServiceRoutine, Context);
-    return AE_OK;
-    NOT_IMPLEMENTED();
     return AE_OK;
 }
 
