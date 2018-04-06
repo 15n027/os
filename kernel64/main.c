@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <acpica/acpi.h>
 #include "acpi.h"
+#include "serial.h"
 
 void cpu_init(void);
 void
@@ -51,6 +52,7 @@ kern_entry(uint32 mbsig, multiboot_info_t *mbi)
     init_ioapic();
     void init_apic(void);
     init_apic();
+
     ENABLE_INTERRUPTS();
     for(;;) asm("hlt");
     asm("int3\n");

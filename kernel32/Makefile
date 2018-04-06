@@ -5,7 +5,7 @@ SRCS := multiboot/multiboot.c \
 	main/main.c main/start.s main/earlyconsole.c \
 	main/console.c main/loader.c main/pagealloc.c \
 	i386/dt.c i386/exception.c i386/exc.s i386/idt-entry.c \
-	i386/cpuid.c i386/paging.c
+	i386/cpuid.c i386/paging.c main/serial.c
 
 CFLAGS += -Werror
 CPPFLAGS += -I. -Iinclude -I../include

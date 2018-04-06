@@ -7,6 +7,8 @@
 #include "basic_defs.h"
 #include "kassert.h"
 #include "debug.h"
+#include "x86/x86_defs.h"
+#include "serial.h"
 
 static uint16_t *vga_txt_mem = (uint16_t*)0xb8000;
 static const int VGA_TXT_BUF_SIZE = 80 * 25 * 2;
@@ -32,7 +34,11 @@ debug_outs(const void *buf, size_t len)
 {
     const char *p = buf;
     for (size_t i = 0; i < len; i++) {
-        asm("outb %0, $0xe9\n" : : "a"(p[i]));
+        OUTB(0x39, p[i]);
+        if (p[i] == '\n') {
+            serial_putchar(1, '\r');
+        }
+        serial_putchar(1, p[i]);
     }
 }
 
@@ -107,6 +113,7 @@ earlyconsole_init(void)
 {
     int i, j;
     int c;
+    serial_init(1);
     for (i = 0; i < 25; i++) {
         for (j = 0; j < 80; j++) {
             c = vga_txt_mem[i * 80 + j] & 0xff;
