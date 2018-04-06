@@ -38,3 +38,6 @@
 
 #define ALIGNED(x) __attribute__((aligned(x)))
 #define PACKED __attribute__((packed))
+
+#define LIKELY(x)       __builtin_expect((x),1)
+#define UNLIKELY(x)     __builtin_expect((x),0)

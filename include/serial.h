@@ -16,6 +16,16 @@ enum {
     UART_SR  = 7,  /* Scratch register */
 };
 
+enum {
+    UART_IER_ERBFI = (1 << 0), /* Enable received data avail interrupt */
+    UART_IER_ETBEI = (1 << 1), /* Enable xmit holding register empty interrupt */
+    UART_IER_ELSI  = (1 << 2), /* Enable recv line status interrupt */
+    UART_IER_EDSSI = (1 << 3), /* Enable modem status interrupt */
+
+    UART_IIR_PND = (1 << 0), /* Interrupt pending, active-low */
+
+};
+
 #define COM1_BASE 0x3f8
 #define COM2_BASE 0x2f8
 #define COM3_BASE 0x3e8

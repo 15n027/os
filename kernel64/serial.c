@@ -5,18 +5,10 @@
 
 #define SET_DLAB(com) OUTB(COM_BASE(com) + UART_LCR, INB(COM_BASE(com) + UART_LCR) | 0x80)
 #define CLR_DLAB(com) OUTB(COM_BASE(com) + UART_LCR, INB(COM_BASE(com) + UART_LCR) & ~0x80)
-static void
-io_delay(void)
-{
-    OUTB(0x80, 0);
-}
 
-void serial_putchar(uint32 com, uint8 ch)
+void __attribute__((noinline)) serial_putchar(uint32 com, uint8 ch)
 {
     while ((INB(COM_BASE(com) + UART_LSR) & 0x20) != 0x20) {
-        for (unsigned i = 0; i < 1000; i++) {
-            io_delay();
-        }
         PAUSE();
     }
     OUTB(COM_BASE(com) + UART_THR, ch);
@@ -66,17 +58,13 @@ bool serial_init(uint32 com)
     CLR_DLAB(com);
     OUTB(REG(UART_LCR), 0x3); // 8-n-1
     OUTB(REG(UART_FCR), 0xc7);
-    OUTB(REG(UART_MCR), 0x9);
+    OUTB(REG(UART_MCR), 0xb);
     return true;
 }
 
 bool serial_lateinit(void)
 {
-    uint8 byt;
     install_handler(36, serial_input);
-    OUTB(COM1_BASE + UART_IER, 0x1);
-    byt = INB(COM1_BASE + UART_IIR);
-    printf("%s: byt=%x\n", __func__, byt);
-
+    OUTB(COM1_BASE + UART_IER, UART_IER_ERBFI);
     return true;
 }
