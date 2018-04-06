@@ -14,7 +14,9 @@ TOPDIR := $(abspath $(TOPDIR))
 PFX := $(TOPDIR)/toolchain/installed/bin/$(ARCH)-elf-
 TOOLCHAINLIBDIR := $(TOPDIR)/toolchain/installed/lib
 
-CC := $(TOPDIR)/build/cc.sh $(VERBOSE) $(PFX)gcc
+DEBUG ?= 1
+
+CC := $(TOPDIR)/build/cc.sh $(VERBOSE) $(DEBUG) $(PFX)gcc
 CROSS_GCC := $(CC)
 LD := $(PFX)ld
 STRIP := $(PFX)strip
@@ -38,7 +40,7 @@ TARGETDIR := $(TOPDIR)/$(OBJTOPDIR)/targets
 INSTALL := $(TOPDIR)/build/install.sh $(VERBOSE) $(OBJDIRPREFIX)/..
 INSTALLLIB := $(INSTALL) $(LIBDIR)
 INSTALLTARGET := $(INSTALL) $(TARGETDIR)
-DEBUG ?= 1
+
 #-ftrapv
 # -finstrument-functions
 CFLAGS := -Wall -std=gnu99 -mno-sse -mno-mmx -nostdlib -nostdinc -static \
@@ -49,10 +51,10 @@ CPPFLAGS := -I $(OBJDIRPREFIX)/include -D__JWOS__
 LDFLAGS := -L $(LIBDIR) -nostdlib -static $(LIBGCC)
 
 ifeq ($(DEBUG), 0)
-CFLAGS += -fomit-frame-pointer -Os
+CFLAGS += -fomit-frame-pointer -O2
 else
 CFLAGS += -DINCLUDE_ASSERTS -fverbose-asm
-CFLAGS += -fno-omit-frame-pointer -O2
+CFLAGS += -fno-omit-frame-pointer -O
 endif
 CFLAGS += -g -ggdb -g3
 

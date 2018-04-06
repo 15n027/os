@@ -1,6 +1,8 @@
 #!/bin/bash
 
 VERBOSE=$1
+DEBUG=$2
+shift
 shift
 
 FILENAME=
