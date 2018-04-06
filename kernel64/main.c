@@ -37,6 +37,9 @@ void pic_init(void);
 void
 kern_entry(uint32 mbsig, multiboot_info_t *mbi)
 {
+    // disable ps2 ports
+    OUTB(0x64, 0xad);
+    OUTB(0x64, 0xa7);
     earlyconsole_init();
     puts("made it to 64 bit mode woot");
     pic_init();
@@ -52,9 +55,9 @@ kern_entry(uint32 mbsig, multiboot_info_t *mbi)
     init_ioapic();
     void init_apic(void);
     init_apic();
-
-    ENABLE_INTERRUPTS();
-    for(;;) asm("hlt");
+    serial_lateinit();
+    printf("ints on, hlt\n");
+    for(;;) asm("sti;pause;pause;pause;hlt");
     asm("int3\n");
     HALT();
 }

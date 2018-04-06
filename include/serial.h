@@ -13,7 +13,7 @@ enum {
     UART_MCR = 4,  /* Modem control register */
     UART_LSR = 5,  /* Line status register */
     UART_MSR = 6,  /* Modem status register */
-    UART_SR = 7,   /* Scratch register */
+    UART_SR  = 7,  /* Scratch register */
 };
 
 #define COM1_BASE 0x3f8
@@ -35,3 +35,4 @@ static inline uint32 COM_BASE(uint32 com)
 void serial_putchar(uint32 com, uint8 ch);
 void serial_puts(uint32 com, const char *s);
 bool serial_init(uint32 com);
+bool serial_lateinit(void);

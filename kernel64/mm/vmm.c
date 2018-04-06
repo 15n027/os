@@ -29,6 +29,10 @@ alloc_va_from(vma *vm, vm_area_type type, size_t n)
     va_range *r;
     vma_range *u;
     ASSERT(type >= 0 && type != VM_AREA_MGMT && type < VM_AREA_MAX);
+    if (vm->used_cnt + 1 >= (vm->free[VM_AREA_MGMT].end - vm->free[VM_AREA_MGMT].start) / sizeof *vm->used) {
+        printf("used_cnt=%u\n", vm->used_cnt);
+        printf("start=%lx end=%lx\n", vm->free[VM_AREA_MGMT].start, vm->free[VM_AREA_MGMT].start);
+    }
     ASSERT(vm->used_cnt + 1 < (vm->free[VM_AREA_MGMT].end - vm->free[VM_AREA_MGMT].start) / sizeof *vm->used);
     r = &vm->free[type];
     if (r->end - r->start < n) {

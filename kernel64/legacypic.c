@@ -51,7 +51,7 @@ static void PIC_remap(int offset1, int offset2)
 
 void pic_init(void)
 {
-    PIC_remap(32, 40);
     OUTB(PIC1_DATA, 0xff);
     OUTB(PIC2_DATA, 0xff);
+    PIC_remap(32, 40);
 }

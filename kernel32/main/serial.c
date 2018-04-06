@@ -26,6 +26,7 @@ bool serial_init(uint32 com)
     OUTB(REG(UART_DLL), 1);
     CLR_DLAB(com);
     OUTB(REG(UART_LCR), 0x3); // 8-n-1
+    OUTB(REG(UART_IER), 0);
     OUTB(REG(UART_FCR), 0xc7);
     return true;
 }

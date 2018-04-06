@@ -127,37 +127,61 @@ static inline void PAUSE(void)
 static inline uint8 INB(uint16 port)
 {
     uint8 val;
-    asm volatile("inb %%dx, %%al" : "=a"(val) : "d"(port) : "memory");
+    if (__builtin_constant_p(port) && port <= 0xff) {
+        asm volatile("inb %1, %%al" : "=a"(val) : "N"(port) : "memory");
+    } else {
+        asm volatile("inb %%dx, %%al" : "=a"(val) : "d"(port) : "memory");
+    }
     return val;
 }
 
 static inline uint16 INW(uint16 port)
 {
     uint16 val;
-    asm volatile("inw %%dx, %%ax" : "=a"(val) : "d"(port) : "memory");
+    if (__builtin_constant_p(port) && port <= 0xff) {
+        asm volatile("inw %1, %%ax" : "=a"(val) : "N"(port) : "memory");
+    } else {
+        asm volatile("inw %%dx, %%ax" : "=a"(val) : "d"(port) : "memory");
+    }
     return val;
 }
 
 static inline uint32 IND(uint16 port)
 {
     uint32 val;
-    asm volatile("inl %%dx, %%eax" : "=a"(val) : "d"(port) : "memory");
+    if (__builtin_constant_p(port) && port <= 0xff) {
+        asm volatile("inl %1, %%eax" : "=a"(val) : "N"(port) : "memory");
+    } else {
+        asm volatile("inl %%dx, %%eax" : "=a"(val) : "d"(port) : "memory");
+    }
     return val;
 }
 
 static inline void OUTB(uint16 port, uint8 val)
 {
-    asm volatile("outb %%al, %%dx" :: "a"(val), "d"(port) : "memory");
+   if (__builtin_constant_p(port) && port <= 0xff) {
+       asm volatile("outb %%al, %1" :: "a"(val), "N"(port) : "memory");
+   } else {
+       asm volatile("outb %%al, %%dx" :: "a"(val), "d"(port) : "memory");
+   }
 }
 
 static inline void OUTW(uint16 port, uint16 val)
 {
-    asm volatile("outw %%ax, %%dx" :: "a"(val), "d"(port) : "memory");
+   if (__builtin_constant_p(port) && port <= 0xff) {
+       asm volatile("outw %%ax, %1" :: "a"(val), "N"(port) : "memory");
+   } else {
+       asm volatile("outw %%ax, %%dx" :: "a"(val), "d"(port) : "memory");
+   }
 }
 
 static inline void OUTD(uint16 port, uint32 val)
 {
-    asm volatile("outl %%eax, %%dx" :: "a"(val), "d"(port) : "memory");
+   if (__builtin_constant_p(port) && port <= 0xff) {
+       asm volatile("outl %%eax, %1" :: "a"(val), "N"(port) : "memory");
+   } else {
+       asm volatile("outl %%eax, %%dx" :: "a"(val), "d"(port) : "memory");
+   }
 }
 
 static inline void ENABLE_INTERRUPTS(void)
