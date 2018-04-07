@@ -32,6 +32,31 @@ typedef struct {
     uint64 hi;
 } Gate;
 
+#pragma pack(push, 1)
+typedef struct {
+    uint32 pad0;
+    uint64 rsp0;
+    uint64 rsp1;
+    uint64 rsp2;
+    uint64 pad1;
+    uint64 ist[7];
+    uint64 pad2;
+    uint32 pad3;
+    uint16 iopermBase;
+} Tss64;
+
+typedef struct {
+    uint16 limit_0_15;
+    uint16 base_0_15;
+    uint8 base_16_23;
+    uint8 p_dpl_type;
+    uint8 g_avl_lim_16_19;
+    uint8 base_24_31;
+    uint64 base_32_63;
+    uint64 reserved;
+} TssGdtEntry;
+#pragma pack(pop)
+
 #define DT_G_SHIFT (23 + 32)
 #define DT_D_SHIFT (22 + 32)
 #define DT_L_SHIFT (21 + 32)
@@ -76,7 +101,9 @@ enum DT_TYPE {
     INTGATE16 = 6,
     TRAPGATE16 = 7,
     TSS32_AVAIL = 9,
+    TSS64_AVAIL = TSS32_AVAIL,
     TSS32_BUSY = 11,
+    TSS64_BUSY = TSS32_BUSY,
     CALLGATE32 = 12,
     INTGATE32 = 14,
     INTGATE64 = INTGATE32,
@@ -92,7 +119,7 @@ enum DT_TYPE {
 #define DT_IDX_DS_DPL0   2
 #define DT_IDX_CS32_DPL0 3
 
-void farjump_to_64(const Regs64 *regs) __attribute__((noreturn));
+void farjump_to_64(const Regs64 *regs);
 void load_idt(void);
 void load_gdt(void);
 void enter_mode_ia32e(void);
