@@ -9,24 +9,25 @@
 #include "apic.h"
 
 static bool x2;
+static uint8 *APIC;
 
-void
+inline void
 apic_write(uint32 reg, uint64 val)
 {
     if (x2) {
         WRMSR(0x800 | (reg >> 4), val);
     } else {
-        NOT_IMPLEMENTED();
+        MMIO_WRITE32((uint32*)(APIC + reg), val);
     }
 }
 
-uint64
+inline uint64
 apic_read(uint32 reg)
 {
     if (x2) {
         return RDMSR(0x800 | (reg >> 4));
     } else {
-        NOT_IMPLEMENTED();
+        return MMIO_READ32((uint32*)(APIC + reg));
     }
     return 0;
 }
@@ -50,19 +51,23 @@ handler_21(IntrFrame64 *frame)
 void
 init_apic(void)
 {
+    VA apicBase = RDMSR(IA32_APIC_BASE);
 
     install_handler(0x22, handler_22);
     install_handler(0x21, handler_21);
     if (cpuid_isset(X2APIC)) {
-        uint64 val;
         printf("X2APIC supported\n");
-        val = RDMSR(IA32_APIC_BASE);
-        printf("IA32_APIC_BASE=0x%016lx\n", val);
-        val |= 3 << 10;
-        WRMSR(IA32_APIC_BASE, val);
+        apicBase |= 3 << 10;
         x2 = true;
-        apic_write(APIC_INITIAL_COUNT, 0);
-        DBG("APIC_LVT_TIMER=%016lx", apic_read(APIC_LVT_TIMER));
-        apic_write(APIC_SPURIOUS, 0x1ff);
+    } else {
+        APIC = (void*)alloc_va(get_kern_vma(), 1);
+        printf("Using xAPIC at %p\n", APIC);
+        map_page(apicBase & ~PAGE_MASK, (VA)APIC, PT_RW | PT_P | PT_NX);
+        apicBase |= (1 << 11);
     }
+    printf("IA32_APIC_BASE=0x%016lx\n", apicBase);
+    WRMSR(IA32_APIC_BASE, apicBase);
+    apic_write(APIC_INITIAL_COUNT, 0);
+    DBG("APIC_LVT_TIMER=%016lx", apic_read(APIC_LVT_TIMER));
+    apic_write(APIC_SPURIOUS, 0x1ff);
 }
