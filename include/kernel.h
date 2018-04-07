@@ -13,7 +13,7 @@
 #define E_EARLYHEAP (S_EARLYHEAP + PTR_TO_PA(_earlyheap_size))
 
 extern const char _start_kernel[], _end_kernel[];
-extern const char _stack_top[];
+extern const char _stack0_top[];
 extern const uint32 _bss_size;
 extern const char _sbss[], _ebss[];
 extern const char _sdata[], _edata[];

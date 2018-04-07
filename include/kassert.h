@@ -11,7 +11,6 @@
         if (!(x)) {                                 \
             kverify_fail(__FILE__, __LINE__, #x);   \
         }                                           \
-        __builtin_unreachable();                    \
     } while (0)
 
 #if defined(INCLUDE_ASSERTS)

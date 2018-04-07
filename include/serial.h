@@ -40,6 +40,7 @@ static inline uint32 COM_BASE(uint32 com)
     case 4:  return COM4_BASE;
     default: NOT_REACHED();
     }
+    return 0;
 }
 
 void serial_putchar(uint32 com, uint8 ch);

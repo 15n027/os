@@ -28,6 +28,7 @@ apic_read(uint32 reg)
     } else {
         NOT_IMPLEMENTED();
     }
+    return 0;
 }
 
 static bool

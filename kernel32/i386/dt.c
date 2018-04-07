@@ -95,5 +95,4 @@ void farjump_to_64(const Regs64 *regs)
         "jmp *farjump_to_64_target(%%rip)\n"
         ".code32\n"
         : : "m" (null_idtr), "m"(fptr), "D"(regs));
-    NOT_REACHED();
 }
