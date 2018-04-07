@@ -160,7 +160,7 @@ IOAPIC APICVER=170011
             uint32 disable = 0;
             uint32 data;
             if (pic_to_apic[j] == pic_to_apic[0] || pic_to_apic[j] == pic_to_apic[1]) {
-                //                disable = 1 << 16;
+                //disable = 1 << 16;
             }
             data =  tbl[j] | disable | (irq + IRQ_OFFSET);
             MMIO_WRITE8(sel, IOREDTBL(j));

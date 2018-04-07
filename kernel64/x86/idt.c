@@ -8,6 +8,7 @@
 #include "kassert.h"
 #include "memmap.h"
 #include "interrupt.h"
+#include "kern_sched.h"
 
 #define NOTHING()
 #define PUSHZERO() "push $0\n"
@@ -66,6 +67,7 @@ idt_init(void)
     BaseLimit64 idtr = {.base = PTR_TO_VA(&idt[0]), .limit = sizeof(idt) - 1};
     uint64 base = PTR_TO_VA(idt_entry_DE);
     uint32 i;
+    ASSERT_ON_COMPILE(EXC_DE == 0);
 #define ENTRY(name, num, type, err)                         \
     ASSERT(PTR_TO_VA(idt_entry_##name) == base + num * 16); \
     ASSERT_ON_COMPILE(EXC_##name < 256);                    \
@@ -97,7 +99,19 @@ install_handler(uint8 vector, interrupt_handler fn)
     return true;
 }
 
-void
+static void
+dump_frame(IntrFrame64 *frame)
+{
+    uint64 *stk = (void*)frame->rsp;
+    printf("RSP:%016lx RIP:%02lx:%016lx RAX:%016lx\n"
+           "RBX:%016lx RCX:%016lx RDX:%016lx\n"
+           "STK: %016lx %016lx %016lx %016lx\n",
+           frame->rsp, frame->cs, frame->rip, frame->rax,
+           frame->rbx, frame->rcx, frame->rdx,
+           stk[-4], stk[-3], stk[-2], stk[-1]);
+}
+
+IntrFrame64 *
 idt_common(IntrFrame64 *frame)
 {
     interrupt_handler_list *handler;
@@ -124,10 +138,26 @@ idt_common(IntrFrame64 *frame)
                    frame->rsp);
         }
         if (frame->vector == EXC_BP || frame->vector == EXC_OF) {
-            return;
+            goto out;
         }
+        dump_frame(frame);
         for (;;) {
             HALT();
         }
     }
+out:
+    ASSERT(frame);
+    ASSERT(current);
+    ASSERT(current->next);
+    ASSERT(current->next->frame);
+    //printf("current:%s next:%s\n", current->name, current->next->name);
+    current->frame = frame;
+    if (current != current->next) {
+        Thread *next = current->next;
+        //        asm volatile("xchgw %%bx, %%bx" ::: "rbx", "memory");
+        //        printf("current!=next\ncs=%lx rip=%lx\n", next->frame->cs, next->frame->rip);
+        current = next;
+        return next->frame;
+    }
+    return current->next->frame;
 }

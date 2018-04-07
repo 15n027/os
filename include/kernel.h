@@ -11,9 +11,9 @@
 #define S_RW_AREA PTR_TO_PA(_s_rw_area)
 #define S_EARLYHEAP PTR_TO_PA(_start_earlyheap)
 #define E_EARLYHEAP (S_EARLYHEAP + PTR_TO_PA(_earlyheap_size))
-
+#define STACK0_SIZE PTR_TO_PA(_stack0_size)
 extern const char _start_kernel[], _end_kernel[];
-extern const char _stack0_top[];
+extern const char _stack0_top[], _stack0_bottom[], _stack0_size[];
 extern const uint32 _bss_size;
 extern const char _sbss[], _ebss[];
 extern const char _sdata[], _edata[];

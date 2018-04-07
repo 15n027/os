@@ -9,6 +9,7 @@
 #include <acpica/acpi.h>
 #include "acpi.h"
 #include "serial.h"
+#include "kern_sched.h"
 
 void cpu_init(void);
 void
@@ -31,8 +32,34 @@ print_mmap(const multiboot_info_t *mbi)
     }
 }
 
+static unsigned console_lock;
+static void spin_lock(unsigned *lock)
+{
+    DISABLE_INTERRUPTS();
+}
+static void spin_unlock(unsigned *lock)
+{
+    ENABLE_INTERRUPTS();
+}
+
 
 void pic_init(void);
+
+volatile int x[2];
+
+static void
+testproc1_fn(void)
+{
+    ENABLE_INTERRUPTS();
+    for(;;) {
+        x[1]++;
+        if (x[1] % 1024 == 0) {
+            spin_lock(&console_lock);
+            printf("1 %08x %08x\r", x[0], x[1]);
+            spin_unlock(&console_lock);
+        }
+    }
+}
 
 void
 kern_entry(uint32 mbsig, multiboot_info_t *mbi)
@@ -50,14 +77,30 @@ kern_entry(uint32 mbsig, multiboot_info_t *mbi)
         pmm_init_multiboot(mbi);
     }
     vmm_init();
+    sched_init();
     init_acpi();
     void init_ioapic(void);
     init_ioapic();
     void init_apic(void);
     init_apic();
     serial_lateinit();
+    Thread *t = thread_new("test-proc1");
+    t->cr3 = GET_CR3();
+    t->frame->rip = (VA)testproc1_fn;
+    t->frame->cs = 8;
+
+    thread_enqueue(t);
     printf("ints on, hlt\n");
-    for(;;) asm("sti;pause;pause;pause;hlt");
+    ENABLE_INTERRUPTS();
+    for(;;) {
+        x[0]++;
+        continue;
+        if (x[0] % 10240 == 0) {
+            spin_lock(&console_lock);
+            printf("2 %08x %08x\r", x[0], x[1]);
+            spin_unlock(&console_lock);
+        }
+    }
     asm("int3\n");
     HALT();
 }

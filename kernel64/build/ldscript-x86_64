@@ -46,6 +46,7 @@ SECTIONS
               _stack0_bottom = ABSOLUTE(.);
               . += 8K;
               _stack0_top = ABSOLUTE(.);
+              _stack0_size = ABSOLUTE(_stack0_top - _stack0_bottom);
               _ebss = ABSOLUTE(.);
         } :data
         _end_kernel= .;

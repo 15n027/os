@@ -33,6 +33,7 @@ idt_common_asm:
  /* IntrFrame *frame */
     cld
     call idt_common
+    mov %rax, %rsp
     pop %rax
     pop %rcx
     pop %rdx
