@@ -20,24 +20,23 @@ git clean -f -d > $LOG
 ./configure $BINUTILSFLAGS --target=$arch >& $LOG \
 && make -j $JOBS >& $LOG && make install >& $LOG
 if [ $? -eq 0 ]; then
-	echo "binutils $arch done"
+    echo "binutils $arch done"
 else
-	echo "binutils $arch fail" && exit 1
+    echo "binutils $arch fail" && exit 1
 fi
 popd
 done
 
 for arch in $ARCHES; do
 echo "Begin GCC $arch"
-rm -rf ${BUILDDIR}
-mkdir -p ${BUILDDIR}
-pushd ${BUILDDIR}
+mkdir -p ${BUILDDIR}-$arch
+pushd ${BUILDDIR}-$arch
 ../${GCC}/configure $GCCFLAGS --target=$arch >& $LOG \
 && make -j $JOBS >& $LOG && make install >& $LOG
 if [ $? -eq 0 ]; then
-	echo "gcc $arch done"
+    echo "gcc $arch done"
 else
-	echo "gcc $arch fail" && exit 1
+    echo "gcc $arch fail" && exit 1
 fi
 popd
 done
