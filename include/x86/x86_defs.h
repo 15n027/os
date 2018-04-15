@@ -194,6 +194,15 @@ static inline void DISABLE_INTERRUPTS(void)
     asm volatile("cli" ::: "memory");
 }
 
+static inline bool INTERRUPTS_ENABLED(void)
+{
+    uintptr_t flags;
+    asm volatile("pushf;"
+                 "popf"
+                 : "=g"(flags));
+    return (flags & EFLAGS_IF) != 0;
+}
+
 static inline void MMIO_WRITE8(uint8 *x, uint8 val)
 {
     asm ("movb %1, %0" :: "m"(*(x)), "rcK"(val) : "memory");
@@ -236,4 +245,9 @@ static inline uint64 MMIO_READ64(uint64 *x)
     uint64 ret;
     asm ("movq %1, %0" : "=g"(ret) : "m"(*(x)) : "memory");
     return ret;
+}
+
+static inline void MFENCE(void)
+{
+    asm("mfence" ::: "memory");
 }

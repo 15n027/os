@@ -38,3 +38,33 @@ Atomic_And32(uint32 *p, uint32 mask)
         : "g"(mask), "m" (*p)
         : "cc", "memory");
 }
+
+#define Make_Atomic_Read(sz)                                \
+    static inline uint##sz                                  \
+    Atomic_Read##sz(uint##sz *p)                            \
+    {                                                       \
+        uint##sz ret;                                       \
+        ASSERT((VA)p % sizeof *p == 0);                      \
+        asm("mov %1, %0" : "=r"(ret) : "m"(*p) : "memory"); \
+        return ret;                                         \
+    }
+
+Make_Atomic_Read(8)
+Make_Atomic_Read(16)
+Make_Atomic_Read(32)
+Make_Atomic_Read(64)
+#undef Make_Atomic_Read
+
+#define Make_Atomic_Write(sz)                                           \
+    static inline void                                                  \
+    Atomic_Write##sz(uint##sz *p, uint##sz val)                         \
+    {                                                                   \
+        ASSERT((VA)p % sizeof *p == 0);                                 \
+        asm("mov %0, %1" : "=rcK"(val) : "m"(*p) : "memory");           \
+    }
+
+Make_Atomic_Write(8)
+Make_Atomic_Write(16)
+Make_Atomic_Write(32)
+Make_Atomic_Write(64)
+#undef Make_Atomic_Write

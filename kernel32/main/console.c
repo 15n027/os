@@ -42,6 +42,17 @@ debug_outs(const void *buf, size_t len)
 }
 
 void
+Log(const char *fmt, ...)
+{
+    va_list val;
+
+    va_start(val, fmt);
+    vprintf(fmt, val);
+    va_end(val);
+}
+
+
+void
 debug_out(const char *fmt, ...)
 {
     char buf[160];

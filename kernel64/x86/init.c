@@ -39,6 +39,7 @@ gdt_init(void)
     gdtr.limit = sizeof(gdt) - 1;
     gdtr.base = PTR_TO_VA(&gdt[0]);
 
+    ASSERT_ON_COMPILE(sizeof *tss == 16);
     tss = (TssGdtEntry*)&gdt[7];
     tss->limit_0_15 = sizeof(tss0) - 1;
     tss->base_0_15 = LOWORD((VA)&tss0);

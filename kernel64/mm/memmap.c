@@ -215,7 +215,10 @@ alloc_phys_pages(size_t nPages)
 
     ret = alloc_aligned_phys_pages_in_range(4 * GB, ~0ull, nPages, 0);
     if (ret == INVALID_PA) {
-        return alloc_aligned_phys_pages_in_range(0, ~0ull, nPages, 0);
+        ret = alloc_aligned_phys_pages_in_range(1 * MB, ~0ull, nPages, 0);
+        if (ret == INVALID_PA) {
+            return alloc_aligned_phys_pages_in_range(0, ~0ull, nPages, 0);
+        }
     }
     return ret;
 }

@@ -2,4 +2,4 @@
 
 #include <stdbool.h>
 
-bool init_acpi(void);
+bool InitAcpi(void);

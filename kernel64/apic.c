@@ -11,32 +11,50 @@
 static bool x2;
 static uint8 *APIC;
 
+
 inline void
-apic_write(uint32 reg, uint64 val)
+ApicWrite(uint32 reg, uint64 val)
 {
     if (x2) {
         WRMSR(0x800 | (reg >> 4), val);
+        MFENCE();
     } else {
         MMIO_WRITE32((uint32*)(APIC + reg), val);
     }
 }
 
 inline uint64
-apic_read(uint32 reg)
+ApicRead(uint32 reg)
+{
+    uint64 val;
+    if (x2) {
+        val = RDMSR(0x800 | (reg >> 4));
+    } else if (APIC) {
+        val = MMIO_READ32((uint32*)(APIC + reg));
+    } else {
+        return INVALID_X2APIC_ID;
+    }
+    return val;
+}
+
+void
+ApicIPI(uint32 apicId, uint32 flags)
 {
     if (x2) {
-        return RDMSR(0x800 | (reg >> 4));
+        uint64 val = QWORD(apicId, flags);
+        ApicWrite(APIC_ICRLO, val);
     } else {
-        return MMIO_READ32((uint32*)(APIC + reg));
+        ASSERT(apicId < INVALID_APIC_ID);
+        ApicWrite(APIC_ICRHI, apicId << 24);
+        ApicWrite(APIC_ICRLO, flags);
     }
-    return 0;
 }
 
 static bool
 handler_22(IntrFrame64 *frame)
 {
     //    printf("TICK\n");
-    apic_write(APIC_EOI, 0);
+    ApicWrite(APIC_EOI, 0);
     return true;
 }
 
@@ -44,7 +62,7 @@ static bool
 handler_21(IntrFrame64 *frame)
 {
     DBG("%s", __func__);
-    apic_write(APIC_EOI, 0x21);
+    ApicWrite(APIC_EOI, 0x21);
     return true;
 }
 
@@ -67,7 +85,16 @@ init_apic(void)
     }
     printf("IA32_APIC_BASE=0x%016lx\n", apicBase);
     WRMSR(IA32_APIC_BASE, apicBase);
-    apic_write(APIC_INITIAL_COUNT, 0);
-    DBG("APIC_LVT_TIMER=%016lx", apic_read(APIC_LVT_TIMER));
-    apic_write(APIC_SPURIOUS, 0x1ff);
+    ApicWrite(APIC_INITIAL_COUNT, 0);
+    DBG("APIC_LVT_TIMER=%016lx", ApicRead(APIC_LVT_TIMER));
+    ApicWrite(APIC_SPURIOUS, 0x1ff);
+}
+
+uint32 MyApicId(void)
+{
+    uint32 id = ApicRead(APIC_ID);
+    if (!x2) {
+        id >>= 24;
+    }
+    return id;
 }

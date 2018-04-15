@@ -5,6 +5,7 @@
 #include "basic_defs.h"
 
 #pragma pack(push, 1)
+
 typedef struct {
     uint16 limit;
     uint32 base;
@@ -24,6 +25,11 @@ typedef struct {
     uint32 ip;
     uint16 cs;
 } FarPtr32;
+
+typedef struct {
+    uint16 ip;
+    uint16 cs;
+} FarPtr16;
 
 #pragma pack(pop)
 
@@ -52,8 +58,8 @@ typedef struct {
     uint8 p_dpl_type;
     uint8 g_avl_lim_16_19;
     uint8 base_24_31;
-    uint64 base_32_63;
-    uint64 reserved;
+    uint32 base_32_63;
+    uint32 reserved;
 } TssGdtEntry;
 #pragma pack(pop)
 

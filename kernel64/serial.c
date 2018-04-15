@@ -39,7 +39,7 @@ serial_input(IntrFrame64 *frame)
         }
     }
     //    printf("IIR=%x LSR=%x\n", INB(COM1_BASE + UART_IIR), INB(COM1_BASE + UART_LSR));
-    apic_write(APIC_EOI, 0);
+    ApicWrite(APIC_EOI, 0);
     return true;
 }
 

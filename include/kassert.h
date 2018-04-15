@@ -1,5 +1,5 @@
 #pragma once
-
+#include <stdbool.h>
 #include <stdio.h>
 #include "debug.h"
 
@@ -34,12 +34,30 @@
         VERIFY(!"implemented");                 \
     } while (0)
 
+#define Panic(msg, ...)                                                 \
+    do {                                                                \
+        printf("PANIC: %s:%d:" msg "\n", __FILE__, __LINE__, ##__VA_ARGS__); \
+        HALT();                                                         \
+    } while (0)
+
+#define PanicIf(cond, msg, ...)                 \
+    do {                                        \
+        if ((cond))                             \
+            Panic(msg, ##__VA_ARGS__);           \
+    } while (0)
+
 static inline void kassert_fail(const char *filename, int line, const char *cond)
 {
+    static bool recurse;
+    if (recurse != 0) {
+        goto halt;
+    }
+    recurse = 1;
     printf("ASSERT: %s:%d (%s)\n", filename, line, cond);
-    for (;;)
+halt:
+    for (;;) {
         HALT();
-    __builtin_unreachable();
+    }
 }
 static inline void kverify_fail(const char *filename, int line, const char *cond)
 {

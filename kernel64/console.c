@@ -9,6 +9,7 @@
 #include "debug.h"
 #include "x86/x86_defs.h"
 #include "serial.h"
+#include "smp.h"
 
 static uint16_t *vga_txt_mem = (uint16_t*)0xb8000;
 static const int VGA_TXT_BUF_SIZE = 80 * 25 * 2;
@@ -16,6 +17,20 @@ static int col, line;
 
 static size_t earlyconsole_write(int fd, const void *buf, size_t len);
 size_t (*console_write)(int fd, const void *buf, size_t len) = earlyconsole_write;
+
+void
+Log(const char *fmt, ...)
+{
+    va_list val;
+    bool ints;
+    static spinlock logLock;
+
+    va_start(val, fmt);
+    ints = spin_lock(&logLock);
+    vprintf(fmt, val);
+    spin_unlock(&logLock, ints);
+    va_end(val);
+}
 
 static inline void
 mmio_write8(volatile void *mmio, unsigned char val)
@@ -58,8 +73,11 @@ debug_out(const char *fmt, ...)
 size_t
 __kernel_write(int fd, const void *buf, size_t len)
 {
+    size_t ret;
+
     debug_outs(buf, len);
-    return console_write(fd, buf, len);
+    ret = console_write(fd, buf, len);
+    return ret;
 }
 
 static void
