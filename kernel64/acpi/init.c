@@ -3,8 +3,8 @@
 #include <acpica/acpi.h>
 #include "x86/x86_defs.h"
 #include "basic_defs.h"
-#include "smp.h"
-#include "apic.h"
+#include "smp/smp.h"
+#include "x86/apic.h"
 #include "ioapic.h"
 
 typedef struct {

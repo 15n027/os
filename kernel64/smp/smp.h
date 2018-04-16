@@ -1,7 +1,7 @@
 #pragma once
 #include "x86/x86_defs.h"
 #include "katomic.h"
-#include "apic.h"
+#include "x86/apic.h"
 
 extern uint32 *cpuToApicMap;
 

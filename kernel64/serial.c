@@ -1,7 +1,7 @@
 #include "serial.h"
 #include "x86/x86_defs.h"
 #include "interrupt.h"
-#include "apic.h"
+#include "x86/apic.h"
 
 #define SET_DLAB(com) OUTB(COM_BASE(com) + UART_LCR, INB(COM_BASE(com) + UART_LCR) | 0x80)
 #define CLR_DLAB(com) OUTB(COM_BASE(com) + UART_LCR, INB(COM_BASE(com) + UART_LCR) & ~0x80)

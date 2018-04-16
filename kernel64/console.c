@@ -9,7 +9,7 @@
 #include "debug.h"
 #include "x86/x86_defs.h"
 #include "serial.h"
-#include "smp.h"
+
 
 static uint16_t *vga_txt_mem = (uint16_t*)0xb8000;
 static const int VGA_TXT_BUF_SIZE = 80 * 25 * 2;
@@ -22,13 +22,8 @@ void
 Log(const char *fmt, ...)
 {
     va_list val;
-    bool ints;
-    static spinlock logLock;
-
     va_start(val, fmt);
-    ints = spin_lock(&logLock);
     vprintf(fmt, val);
-    spin_unlock(&logLock, ints);
     va_end(val);
 }
 

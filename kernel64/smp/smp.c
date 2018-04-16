@@ -1,10 +1,10 @@
 #include <string.h>
-#include "smp.h"
-#include "apic.h"
+#include "smp/smp.h"
+#include "x86/apic.h"
 #include "memmap.h"
 #include "x86/paging.h"
 #include "x86/dt.h"
-#include "smpBootAP.h"
+#include "smp/smpBootAP.h"
 #include "x86/cpuid.h"
 
 uint32 *cpuToApicMap;
