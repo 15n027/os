@@ -15,7 +15,7 @@ $QEMU \
     -machine q35 \
     -enable-kvm \
     -smp 2 \
-    -m 32 \
+    -m 8 \
     $CDROM \
     -vga std \
     -monitor /dev/stdout \

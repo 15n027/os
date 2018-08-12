@@ -2,7 +2,7 @@ TOPDIR ?= ..
 include $(TOPDIR)/build/defs.mk
 
 SRCS := multiboot/multiboot.c \
-	main/main.c main/start.s main/earlyconsole.c \
+	main/main.c main/start.s  \
 	main/console.c main/loader.c main/pagealloc.c \
 	i386/dt.c i386/exception.c i386/exc.S  \
 	i386/cpuid.c i386/paging.c main/serial.c

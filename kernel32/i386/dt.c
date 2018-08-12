@@ -1,6 +1,5 @@
 #include <stdint.h>
 #include "debug.h"
-#include "x86/exception.h"
 #include "x86/dt.h"
 #include "i386/paging32.h"
 #include "x86/x86_defs.h"
@@ -55,7 +54,7 @@ enter_mode_ia32e(void)
 
 uint64 farjump_to_64_target;
 Regs64 farjump_to_64_ctx;
-void farjump_to_64(const Regs64 *regs)
+__attribute__((noreturn)) void farjump_to_64(const Regs64 *regs)
 {
     extern const char tramp64[];
     DTR32 null_idtr = {0};
@@ -86,5 +85,7 @@ void farjump_to_64(const Regs64 *regs)
         "mov 0x38(%%rdi), %%rdi\n"
         "jmp *farjump_to_64_target(%%rip)\n"
         ".code32\n"
-        : : "m" (null_idtr), "m"(fptr), "D"(regs));
+        :
+        : "m" (null_idtr), "m"(fptr), "D"(regs));
+    __builtin_unreachable();
 }
