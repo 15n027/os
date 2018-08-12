@@ -59,23 +59,6 @@ init_4level_pagetable(void)
     map_page_with_root(get_paging_root(), 0xb8000, 0xb8000, PT_NX | PT_RW | PT_P);
 }
 
-#if 0
-static bool
-is_mapped(VA64 vBase)
-{
-    uint64 *l4, *l3, *l2, *l1;
-
-    ASSERT(GET_CR3() == PTR_TO_PA(pml4));
-    l4 = &pml4[PML4_OFF(vBase)];
-    if (*l4 & PT_P) {
-        if (*l4 & PT_PS) {
-            return TRUE;
-        }
-        l3 = 
-    }
-}
-#endif
-
 static void *
 map_scratch(PA pa)
 {
