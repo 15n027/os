@@ -1,6 +1,7 @@
 #pragma once
 #include "basic_types.h"
 #include "basic_defs.h"
+#include "dt.h"
 #include <limits.h>
 #ifndef PAGE_SIZE
 #error "PAGE_SIZE undefined by limits.h"
@@ -111,6 +112,49 @@ static inline void SET_CR(uint32 cr, uintptr_t val)
         NOT_REACHED();
     }
 #undef SET_CRX
+}
+
+static inline void SET_DS(uint16 sel)
+{
+    asm volatile ("mov %0, %%ds\n" :: "r" (sel));
+}
+static inline void SET_ES(uint16 sel)
+{
+    asm volatile ("mov %0, %%es\n" :: "r" (sel));
+}
+static inline void SET_SS(uint16 sel)
+{
+    asm volatile ("mov %0, %%ss\n" :: "r" (sel));
+}
+static inline void SET_FS(uint16 sel)
+{
+    asm volatile ("mov %0, %%fs\n" :: "r" (sel));
+}
+static inline void SET_GS(uint16 sel)
+{
+    asm volatile ("mov %0, %%gs\n" :: "r" (sel));
+}
+
+#define SET_CS(sel) asm volatile("ljmp %0, $1f;1:" :: "K"(sel))
+
+static inline void GET_GDT32(DTR32 *dtr)
+{
+    asm ("sgdt %0" : "=m" (*dtr));
+}
+
+static inline void SET_GDT32(DTR32 dtr)
+{
+    asm ("lgdt %0" : : "m" (dtr));
+}
+
+static inline void GET_IDT32(DTR32 *dtr)
+{
+    asm ("sidt %0" : "=m" (*dtr));
+}
+
+static inline void SET_IDT32(DTR32 dtr)
+{
+    asm ("lidt %0" : : "m" (dtr));
 }
 
 static inline uint64 RDTSC(void)

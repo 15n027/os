@@ -9,12 +9,12 @@
 typedef struct {
     uint16 limit;
     uint32 base;
-} BaseLimit32;
+} DTR32;
 
 typedef struct {
     uint16 limit;
     uint64 base;
-} BaseLimit64;
+} DTR64;
 
 typedef struct {
     uint64 ip;
@@ -36,7 +36,7 @@ typedef struct {
 typedef struct {
     uint64 lo;
     uint64 hi;
-} Gate;
+} Gate64;
 
 #pragma pack(push, 1)
 typedef struct {

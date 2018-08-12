@@ -7,6 +7,8 @@
 #include "kernel.h"
 #include "x86/msr.h"
 
+extern const Gate64 IDT[];
+
 static uint64 gdt[] = {
     [1] = DT_G | DT_L | DT_P | DT_DPL(0) |
           DT_TYPE(CS_NONCONFORMING_READABLE_NOTACCESSED) | DT_LIMIT(0xfffff),
@@ -19,38 +21,28 @@ static uint64 gdt[] = {
 void
 load_gdt(void)
 {
-    BaseLimit32 addr;
+    DTR32 addr;
     DBG("");
     addr.limit = sizeof(gdt) - 1;
     addr.base = (uintptr_t)&gdt[0];
-    asm volatile("lgdt %0\n"
-            "mov %1, %%ds\n"
-            "mov %1, %%ss\n"
-            "mov %1, %%es\n"
-            "xor %%eax, %%eax\n"
-            "mov %%eax, %%fs\n"
-            "mov %%eax, %%gs\n"
-            "ljmp %2, $1f\n"
-            "1:\n"
-            :
-            : "m"(addr), "r"(DT_KERN_DATA_SEL), "K"(DT_KERN32_CODE_SEL)
-            : "eax");
+    SET_GDT32(addr);
+    SET_DS(DT_KERN_DATA_SEL);
+    SET_ES(DT_KERN_DATA_SEL);
+    SET_SS(DT_KERN_DATA_SEL);
+    SET_DS(DT_KERN_DATA_SEL);
+    SET_FS(0);
+    SET_GS(0);
+    SET_CS(DT_KERN32_CODE_SEL);
 }
 
-
-extern void init_idt_entries(Gate idt[static 256]);
 void
 load_idt(void)
 {
-    BaseLimit32 idtr;
-    static Gate idt[256] __attribute__((aligned(0x1000)));
+    DTR32 idtr;
 
-    init_idt_entries(idt);
-    idtr.base = PTR_TO_VA(idt);
-    idtr.limit = sizeof(idt) - 1;
-    asm volatile ("lidt %0\n"
-            :
-            : "m" (idtr));
+    idtr.base = (VA)IDT;
+    idtr.limit = 256 * sizeof IDT[0] - 1;
+    SET_IDT32(idtr);
 }
 
 void
@@ -66,7 +58,7 @@ Regs64 farjump_to_64_ctx;
 void farjump_to_64(const Regs64 *regs)
 {
     extern const char tramp64[];
-    BaseLimit32 null_idtr = {0};
+    DTR32 null_idtr = {0};
     FarPtr32 fptr = {.cs = DT_KERN64_CODE_SEL, .ip = PTR_TO_PA(tramp64)};
     farjump_to_64_ctx = *regs;
     farjump_to_64_target = regs->rip;

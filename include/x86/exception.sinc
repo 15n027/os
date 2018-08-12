@@ -21,4 +21,7 @@
 #define EXC_XM  19
 #define EXC_VE  10
 
+#define EXC_HAS_ERRCODE ((1u << EXC_DF) | (1u << EXC_TS) | (1u << EXC_NP) | \
+                         (1u << EXC_SS) | (1u << EXC_GP) | (1u << EXC_PF) | \
+                         (1u << EXC_AC))
 #endif

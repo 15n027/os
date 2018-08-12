@@ -20,8 +20,8 @@ uint32 cpuToApic(uint32 cpu)
 
 typedef struct {
     uint32 loadAddr;
-    BaseLimit32 gdtr;
-    BaseLimit64 idtr;
+    DTR32 gdtr;
+    DTR64 idtr;
     uint64 gdt[4];
     uint32 cr3;
     FarPtr16 to32Bit;

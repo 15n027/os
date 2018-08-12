@@ -32,7 +32,7 @@ gdt_init(void)
 {
     extern const char gdt_init_load_cs[];
     FarPtr64 target64;
-    BaseLimit64 gdtr;
+    DTR64 gdtr;
     TssGdtEntry *tss;
     target64.cs = DT_KERN64_CODE_SEL;
     target64.ip = PTR_TO_VA(gdt_init_load_cs);

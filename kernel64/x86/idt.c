@@ -45,14 +45,14 @@ typedef struct interrupt_handler_list {
     struct interrupt_handler_list *next;
 } interrupt_handler_list;
 
-static Gate idt[256];
+static Gate64 idt[256];
 
 static interrupt_handler_list *handlers[256];
 
-static inline Gate
+static inline Gate64
 IDTDESC(uint64 handler)
 {
-    Gate ret;
+    Gate64 ret;
 
     ret.hi = HIDWORD(handler);
     ret.lo = ((HIWORD(handler) << 48) | LOWORD(handler)) |
@@ -64,7 +64,7 @@ IDTDESC(uint64 handler)
 void
 idt_init(void)
 {
-    BaseLimit64 idtr = {.base = PTR_TO_VA(&idt[0]), .limit = sizeof(idt) - 1};
+    DTR64 idtr = {.base = PTR_TO_VA(&idt[0]), .limit = sizeof(idt) - 1};
     uint64 base = PTR_TO_VA(idt_entry_DE);
     uint32 i;
     ASSERT_ON_COMPILE(EXC_DE == 0);
