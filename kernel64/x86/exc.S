@@ -1,3 +1,5 @@
+#include "x86/exception.sinc"
+
 .section .text
 
 .code64
@@ -51,3 +53,32 @@ idt_common_asm:
     pop %r15
     add $16, %rsp
     iretq
+
+
+.macro gateStub vector
+       .globl idt_entry_\vector
+       idt_entry_\vector:
+       .cfi_startproc
+       .if \vector < 32
+           .if ((1u << \vector) & EXC_HAS_ERRCODE) == 0
+              push $0
+           .endif
+       .else
+           push $0
+       .endif
+       push $\vector
+       jmp idt_common_asm
+       .cfi_endproc
+.endm
+
+.irpc i, 0123456789abcdef
+.irpc j, 0123456789abcdef
+      gateStub 0x\i\j
+.endr
+.endr
+
+.section IDTData, "a", @progbits
+.globl IDT
+IDT:
+         .fill 4096, 1, 0xaa
+

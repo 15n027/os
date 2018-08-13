@@ -4,9 +4,13 @@
 
 .section .text
 _start:
-        movabs $_stack0_top, %rsp
-        sub $128, %rsp
-        mov %rsp, %rbp
+        lea (_stack0_top - 128)(%rip), %rsp
+        sub $10, %rsp
+        lea IDT(%rip), %rax
+        movw $4095, 0(%rsp)
+        mov %rax, 2(%rsp)
+        lidt (%rsp)
+        add $10, %rsp
         cld
         call kern_entry
-        int3
+        ud2

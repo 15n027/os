@@ -76,9 +76,12 @@ kern_entry(uint32 mbsig, multiboot_info_t *mbi)
         print_mmap(mbi);
         pmm_init_multiboot(mbi);
     }
+    DBG("");
     vmm_init();
+    DBG("");
     void init_apic(void);
     sched_init();
+    DBG("");
     init_apic();
     DBG("");
     ENABLE_INTERRUPTS();

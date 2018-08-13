@@ -7,14 +7,22 @@
 _start:
 .cfi_startproc
         cld
-        mov $_stack_top, %esp
+        lea _stack_top, %esp
         push %ebx
         push %eax
         mov $((1 << 16) | (1 << 4) | (1 << 0)), %eax
         mov %eax, %cr0
+
+        sub $6, %esp
+        movw $4095, (%esp)
+        lea IDT, %eax
+        mov %eax, 2(%esp)
+        lidt (%esp)
+        add $6, %esp
+
         xor %eax, %eax
-        mov $_sbss, %edi
-        mov $_bss_size, %ecx
+        lea _sbss, %edi
+        lea _bss_size, %ecx
         rep stosb
         call kern_entry
         ud2

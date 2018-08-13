@@ -5,7 +5,7 @@ ifneq ($(ARCH), x86_64)
 $(error "arch is wrong")
 endif
 
-SRCS := main.c start.s console.c x86/init.c x86/idt.c x86/exc.s \
+SRCS := main.c start.s console.c x86/init.c x86/idt.c x86/exc.S \
 	mm/memmap.c libc/lock.c mm/vmm.c libc/malloc.c \
 	acpi/os.c legacypic.c acpi/init.c ioapic.c x86/apic.c x86/cpuid.c \
 	serial.c user.c smp/smp.c smp/bootAP.S
@@ -13,16 +13,23 @@ SRCS := main.c start.s console.c x86/init.c x86/idt.c x86/exc.s \
 CFLAGS += -Werror
 CPPFLAGS += -I. -Iinclude -I../include
 LDSCRIPT := build/ldscript-$(ARCH)
-LDFLAGS += -T $(LDSCRIPT) --gc-sections -static
+LDFLAGS += -T $(LDSCRIPT)
 LDLIBS := -lacpica -lc
 
 KERNEL := kernel64.elf
 include $(TOPDIR)/build/pre-targets.mk
 
+.EXPORT_ALL_VARIABLES:
+.DELETE_ON_ERROR:
+
 all: $(TARGETDIR)/$(KERNEL)
 
-$(OBJDIR)/$(KERNEL): $(OBJS) $(LDSCRIPT)
-	@$(LD) -o $@ $(OBJS) $(LDFLAGS) $(LDLIBS) -Map $(OBJDIR)/$(KERNEL).map
+$(OBJDIR)/$(KERNEL).orig: $(OBJS) $(LDSCRIPT)
+	$(LD) -o $@ $(OBJS) $(LDFLAGS) $(LDLIBS) -Map $(OBJDIR)/$(KERNEL).map
+
+$(OBJDIR)/$(KERNEL): $(OBJDIR)/$(KERNEL).orig $(TOPDIR)/build/buildIDT
+	$(TOPDIR)/build/buildIDT $< $<.idt
+	$(OBJCOPY) --update-section IDTData=$<.idt $< $@
 
 $(TARGETDIR)/$(KERNEL): $(OBJDIR)/$(KERNEL)
 	@$(INSTALLTARGET) $<

@@ -19,7 +19,6 @@ def genentry(vector, syms):
     ist = 0
     kern_cs = 0x08
     sym = syms[vector]
-#    return "\xaa" * 16
     return struct.pack("<HHBBHII", sym & 0xffff, kern_cs, ist, p_dpl_type, (sym >> 16) & 0xffff, sym >> 32, 0)
 
 def main():

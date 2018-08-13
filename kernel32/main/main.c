@@ -66,7 +66,6 @@ void kern_entry(uint32_t mbsig, multiboot_info_t *mbi)
             mbi->flags, mbi->mem_lower, mbi->mem_upper, mbi->boot_device);
     printf("bootloadername=%s\n", (char*)mbi->boot_loader_name);
     load_gdt();
-    load_idt();
     enter_mode_ia32e();
     asm volatile("int3");
     asm("pushf\n"

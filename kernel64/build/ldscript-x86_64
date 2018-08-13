@@ -19,7 +19,9 @@ SECTIONS
               _etext = ABSOLUTE(.);
               *(.gnu.linkonce.r.* .rodata .rodata*);
         } :text
-
+        IDTData : {
+              *(IDTData);
+        } :text
         _sctors = .;
         .ctors : {
               KEEP(*(.ctors));

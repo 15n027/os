@@ -72,5 +72,4 @@ void
 cpu_init(void)
 {
     gdt_init();
-    idt_init();
 }

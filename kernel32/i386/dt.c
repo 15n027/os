@@ -35,16 +35,6 @@ load_gdt(void)
 }
 
 void
-load_idt(void)
-{
-    DTR32 idtr;
-
-    idtr.base = (VA)IDT;
-    idtr.limit = 256 * sizeof IDT[0] - 1;
-    SET_IDT32(idtr);
-}
-
-void
 enter_mode_ia32e(void)
 {
     init_4level_pagetable();

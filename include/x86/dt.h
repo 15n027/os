@@ -126,6 +126,5 @@ enum DT_TYPE {
 #define DT_IDX_CS32_DPL0 3
 
 void farjump_to_64(const Regs64 *regs);
-void load_idt(void);
 void load_gdt(void);
 void enter_mode_ia32e(void);
