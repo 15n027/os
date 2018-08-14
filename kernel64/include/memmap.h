@@ -2,6 +2,7 @@
 #include "basic_types.h"
 #include "multiboot/multiboot.h"
 #include "x86/exception.h"
+#include "interrupt.h"
 
 typedef uint64 PFN;
 #define INVALID_PFN (0x8000000000000000ull)
@@ -45,7 +46,7 @@ typedef struct vma {
 vma *get_kern_vma(void);
 VA alloc_va_from(vma *vm, vm_area_type type, size_t n);
 VA alloc_va(vma *vm, size_t n);
-bool handle_pf(IntrFrame64 *frame);
+bool handle_pf(IretFrame *frame);
 
 void map_pages(PA pa, VA va, uint32 n, uint64 flags);
 void map_page(PA pa, VA va, uint64 flags);

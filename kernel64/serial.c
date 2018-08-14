@@ -23,7 +23,7 @@ void serial_puts(uint32 com, const char *s)
 }
 
 static bool
-serial_input(IntrFrame64 *frame)
+serial_input(IretFrame *unused)
 {
     extern size_t (*console_write)(int fd, const void *buf, size_t len);
 

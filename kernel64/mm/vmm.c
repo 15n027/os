@@ -184,7 +184,7 @@ map_page(PA pa, VA va, uint64 flags)
 }
 
 bool
-handle_pf(IntrFrame64 *frame)
+handle_pf(IretFrame *unused)
 {
     PA pa = INVALID_PA;
     uint32 i;

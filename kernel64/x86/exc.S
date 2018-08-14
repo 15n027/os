@@ -15,59 +15,41 @@
 .type idt_common_asm, @function
 .extern idt_common
 
-idt_common_asm:
-    push %r15
-    push %r14
-    push %r13
-    push %r12
-    push %r11
-    push %r10
-    push %r9
-    push %r8
-    push %rdi
-    push %rsi
-    push %rbp
-    push %rbx
+idt_no_errcode:
     push %rdx
-    push %rcx
-    push %rax
-    mov %rsp, %rdi
- /* IntrFrame *frame */
+idt_with_errcode:
     cld
+    .irp r, cx, di, si, 8, 9, 10, 11
+    push %r\r
+    .endr
+    lea 0x40(%rsp), %rdi
+    movzx %al, %esi
     call idt_common
-    mov %rax, %rsp
-    pop %rax
-    pop %rcx
-    pop %rdx
-    pop %rbx
-    pop %rbp
-    pop %rsi
-    pop %rdi
-    pop %r8
-    pop %r9
-    pop %r10
-    pop %r11
-    pop %r12
-    pop %r13
-    pop %r14
-    pop %r15
-    add $16, %rsp
+    .irp r, 11, 10, 9, 8, si, di, cx, ax, dx
+    pop %r\r
+    .endr
     iretq
-
 
 .macro gateStub vector
        .globl idt_entry_\vector
        idt_entry_\vector:
        .cfi_startproc
        .if \vector < 32
-           .if ((1u << \vector) & EXC_HAS_ERRCODE) == 0
-              push $0
+           .if ((1u << \vector) & EXC_HAS_ERRCODE) != 0
+              xchg (%rsp), %rdx
+           .endif
+       .endif
+       push %rax
+       mov $\vector, %al
+       .if \vector < 32
+           .if ((1u << \vector) & EXC_HAS_ERRCODE) != 0
+               jmp idt_with_errcode
+           .else
+              jmp idt_no_errcode
            .endif
        .else
-           push $0
+           jmp idt_no_errcode
        .endif
-       push $\vector
-       jmp idt_common_asm
        .cfi_endproc
 .endm
 

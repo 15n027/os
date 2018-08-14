@@ -51,7 +51,7 @@ ApicIPI(uint32 apicId, uint32 flags)
 }
 
 static bool
-handler_22(IntrFrame64 *frame)
+handler_22(IretFrame *unused)
 {
     //    printf("TICK\n");
     ApicWrite(APIC_EOI, 0);
@@ -59,7 +59,7 @@ handler_22(IntrFrame64 *frame)
 }
 
 static bool
-handler_21(IntrFrame64 *frame)
+handler_21(IretFrame *unused)
 {
     DBG("%s", __func__);
     ApicWrite(APIC_EOI, 0x21);

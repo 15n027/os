@@ -38,64 +38,53 @@ install_handler(uint8 vector, interrupt_handler fn)
 }
 
 static void
-dump_frame(IntrFrame64 *frame)
+dump_frame(IretFrame *frame)
 {
     uint64 *stk = (void*)frame->rsp;
-    printf("RSP:%016lx RIP:%02lx:%016lx RAX:%016lx\n"
-           "RBX:%016lx RCX:%016lx RDX:%016lx\n"
-           "STK: %016lx %016lx %016lx %016lx\n",
-           frame->rsp, frame->cs, frame->rip, frame->rax,
-           frame->rbx, frame->rcx, frame->rdx,
-           stk[-4], stk[-3], stk[-2], stk[-1]);
+    printf("RSP:%016lx RIP:%02lx:%016lx\n"
+           "STK: %016lx %016lx %016lx %016lx %016lx %016lx\n",
+           frame->rsp, frame->cs, frame->rip,
+           stk[0], stk[1], stk[2], stk[3], stk[4], stk[5]);
 }
 
-IntrFrame64 *
-idt_common(IntrFrame64 *frame)
+void
+idt_common(IretFrame *frame, uint32 vector, uint32 errCode)
 {
     interrupt_handler_list *handler;
     bool handled = false;
-    ASSERT(frame->vector < ARRAYSIZE(handlers));
-    if (frame->vector == EXC_PF) {
+    ASSERT(vector < ARRAYSIZE(handlers));
+    if (vector == EXC_PF) {
+        if (GET_CR2() <= 0x1000) {
+            DBG("null deref\n");
+            dump_frame(frame);
+            HALT();
+        }
         handled = handle_pf(frame);
     }
-    handler = handlers[frame->vector];
+    handler = handlers[vector];
     while (handler) {
         handled |= handler->fn(frame);
         handler = handler->next;
     }
     if (!handled) {
-        if (frame->vector == EXC_PF) {
-            printf("UNHANDLED #PF: err: 0x%"PRIx64" cr2: %lx cs:ip %"PRIx64":%#"PRIx64"\n",
-                   frame->errcode, GET_CR2(), frame->cs, frame->rip);
-        } else if (frame->vector != EXC_BP && frame->vector != EXC_OF) {
-            printf("UNHANDLED INT/EXC: 0x%"PRIx64" err: 0x%"PRIx64" cs:ip %"PRIx64":%#"PRIx64"\n",
-                   frame->vector, frame->errcode, frame->cs, frame->rip);
+        if (vector == EXC_PF) {
+            printf("UNHANDLED #PF: err: 0x%x cr2: %lx cs:ip %"PRIx64":%#"PRIx64"\n",
+                   errCode, GET_CR2(), frame->cs, frame->rip);
+        } else if (vector != EXC_BP && vector != EXC_OF) {
+            printf("UNHANDLED INT/EXC: 0x%x err: 0x%x cs:ip %"PRIx64":%#"PRIx64"\n",
+                   vector, errCode, frame->cs, frame->rip);
         }
         if ((frame->cs & 3) != 0) {
             printf("CPL change detected: ss:esp %08"PRIx64":%08"PRIx64"\n", frame->ss,
                    frame->rsp);
         }
-        if (frame->vector == EXC_BP || frame->vector == EXC_OF) {
-            goto out;
+        if (vector == EXC_BP || vector == EXC_OF) {
+            return;
         }
         dump_frame(frame);
+        DBG("");
         for (;;) {
             HALT();
         }
     }
-out:
-    ASSERT(frame);
-    ASSERT(current);
-    ASSERT(current->next);
-    ASSERT(current->next->frame);
-    //printf("current:%s next:%s\n", current->name, current->next->name);
-    current->frame = frame;
-    if (current != current->next) {
-        Thread *next = current->next;
-        //        asm volatile("xchgw %%bx, %%bx" ::: "rbx", "memory");
-        //        printf("current!=next\ncs=%lx rip=%lx\n", next->frame->cs, next->frame->rip);
-        current = next;
-        return next->frame;
-    }
-    return current->next->frame;
 }

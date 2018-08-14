@@ -287,9 +287,9 @@ AcpiOsWriteMemory (
 }
 
 static bool
-acpi_handler(IntrFrame64 *frame)
+acpi_handler(IretFrame *frame)
 {
-    printf("%s: vec=%lu\n", __func__, frame->vector);
+    printf("%s\n", __func__);
     return true;
 }
 
