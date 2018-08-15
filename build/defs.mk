@@ -44,9 +44,9 @@ INSTALLTARGET := $(INSTALL) $(TARGETDIR)
 #-ftrapv
 # -finstrument-functions
 CFLAGS := -Wall -std=gnu99 -mno-sse -mno-mmx -nostdlib -nostdinc -static \
-	-Wstack-usage=0 -ffreestanding -fbuiltin
-#	-mindirect-branch=thunk \
-#	-mindirect-branch-register -mgeneral-regs-only -mmitigate-rop
+	-ffreestanding -fbuiltin \
+	-mindirect-branch=thunk \
+	-mindirect-branch-register -mgeneral-regs-only -mmitigate-rop
 CPPFLAGS := -I $(OBJDIRPREFIX)/include -D__JWOS__
 LDFLAGS := -L $(LIBDIR) -nostdlib -static $(LIBGCC)
 

@@ -1,6 +1,6 @@
 #!/bin/bash -x
 
-LOG=/dev/null
+LOG=/home/jwhite/os/toolchain/build.log
 GCC=gcc
 BINUTILS=binutils
 
@@ -16,9 +16,9 @@ ARCHES="i686-elf x86_64-elf"
 for arch in $ARCHES; do
 echo "Begin binutils $arch"
 pushd ${BINUTILS}
-git clean -f -d > $LOG
-./configure $BINUTILSFLAGS --target=$arch >& $LOG \
-&& make -j $JOBS >& $LOG && make install >& $LOG
+git clean -f -d >> $LOG
+./configure $BINUTILSFLAGS --target=$arch 2>1 >> $LOG \
+&& make -j $JOBS 2>1 >> $LOG && make install 2>1 >> $LOG
 if [ $? -eq 0 ]; then
     echo "binutils $arch done"
 else
