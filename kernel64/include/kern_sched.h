@@ -1,10 +1,8 @@
 #pragma once
 
-#include "x86/exception.h"
 
 typedef struct Thread {
     struct Thread *next;
-    IntrFrame64 *frame;
     uint8 *stack;
     PA cr3;
     bool user;

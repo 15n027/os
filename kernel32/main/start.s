@@ -14,7 +14,7 @@ _start:
         mov %eax, %cr0
 
         sub $6, %esp
-        movw $4095, (%esp)
+        movw $0xfff, (%esp)
         lea IDT, %eax
         mov %eax, 2(%esp)
         lidt (%esp)

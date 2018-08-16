@@ -1,7 +1,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <inttypes.h>
-#include "x86/exception.h"
 #include "x86/dt.h"
 #include "x86/x86_defs.h"
 #include "basic_defs.h"
@@ -9,7 +8,7 @@
 #include "memmap.h"
 #include "interrupt.h"
 #include "kern_sched.h"
-
+#include "x86/exception.sinc"
 
 typedef struct interrupt_handler_list {
     interrupt_handler fn;

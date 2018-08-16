@@ -8,7 +8,7 @@ endif
 SRCS := main.c start.s console.c x86/init.c x86/idt.c x86/exc.S \
 	mm/memmap.c libc/lock.c mm/vmm.c libc/malloc.c \
 	acpi/os.c legacypic.c acpi/init.c ioapic.c x86/apic.c x86/cpuid.c \
-	serial.c user.c smp/smp.c smp/bootAP.S
+	serial.c smp/smp.c smp/bootAP.S
 
 CFLAGS += -Werror
 CPPFLAGS += -I. -Iinclude -I../include

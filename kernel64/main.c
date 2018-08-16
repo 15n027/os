@@ -47,20 +47,6 @@ void pic_init(void);
 
 volatile int x[2];
 
-static void
-testproc1_fn(void)
-{
-    ENABLE_INTERRUPTS();
-    for(;;) {
-        x[1]++;
-        if (x[1] % 1024 == 0) {
-            spin_lock(&console_lock);
-            Log("1 %08x %08x\r", x[0], x[1]);
-            spin_unlock(&console_lock);
-        }
-    }
-}
-
 void
 kern_entry(uint32 mbsig, multiboot_info_t *mbi)
 {
@@ -80,7 +66,6 @@ kern_entry(uint32 mbsig, multiboot_info_t *mbi)
     vmm_init();
     DBG("");
     void init_apic(void);
-    sched_init();
     DBG("");
     init_apic();
     DBG("");
@@ -88,12 +73,7 @@ kern_entry(uint32 mbsig, multiboot_info_t *mbi)
     InitAcpi();
     DBG("");
     serial_lateinit();
-    Thread *t = thread_new("test-proc1");
-    t->cr3 = GET_CR3();
-    t->frame->rip = (VA)testproc1_fn;
-    t->frame->cs = 8;
 
-    thread_enqueue(t);
     Log("ints on, hlt\n");
     ENABLE_INTERRUPTS();
     for(;;) {

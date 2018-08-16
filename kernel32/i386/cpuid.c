@@ -1,7 +1,3 @@
-#include <stdint.h>
-#include <stdbool.h>
-#include "basic_defs.h"
-#include "kassert.h"
 #include "x86/cpuid.h"
 
 typedef struct {

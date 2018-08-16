@@ -82,6 +82,14 @@
 #define GET_CR4(val) GET_CR(4)
 #define GET_CR8(val) GET_CR(8)
 
+typedef struct IretFrame {
+    uint64 rip;
+    uint64 cs;
+    uint64 flags;
+    uint64 rsp;
+    uint64 ss;
+} IretFrame;
+
 static inline uintptr_t GET_CR(uint32 cr)
 {
 #define GET_CRX(cr, val) asm volatile("mov %%cr" STRINGIZE(cr) ", %0" : "=r"(val))

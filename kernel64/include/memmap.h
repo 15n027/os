@@ -1,7 +1,6 @@
 #pragma once
 #include "basic_types.h"
 #include "multiboot/multiboot.h"
-#include "x86/exception.h"
 #include "interrupt.h"
 
 typedef uint64 PFN;

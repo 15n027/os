@@ -1,28 +1,12 @@
-#include <stdio.h>
-
-#include "basic_types.h"
-#include "x86/exception.h"
-#include "x86/dt.h"
-#include "debug.h"
 #include "x86/x86_defs.h"
-#include "kernel.h"
-
+#include "x86/exception.sinc"
 void
-idt_common(IntrFrame32 *frame)
+idt_common(IretFrame *frame, uint32 vector, uint32 errCode)
 {
-    printf("INT/EXC VEC: %llu err: %#llx cs:ip %#llx:%#llx\n", frame->vector, frame->errcode,
-            frame->cs, frame->eip);
-    if (frame->vector == EXC_PF) {
-        printf("#PF CR2=%x\n", GET_CR2());
-    }
-    if ((frame->cs & 3) != 0) {
-        printf("CPL change detected: ss:esp %08llx:%08llx\n", frame->ss, frame->esp);
-    }
-    //    ASSERT(frame->vector == 4);
-    ASSERT_ON_COMPILE(EXC_OF == 4);
-    if (frame->vector == EXC_BP || frame->vector == EXC_OF) {
+    DBG("idt_common: frame=%p vector=0x%x errCode=0x%x", frame, vector, errCode);
+    if (vector == EXC_BP || vector == EXC_OF) {
         return;
     }
-    for(;;)
-        asm("cli;hlt");
+    DBG("Unhandled exception: 0x%x rip=0x%llx rsp=0x%llx", vector, frame->rip, frame->rsp);
+    HALT();
 }

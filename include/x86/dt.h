@@ -1,9 +1,8 @@
 #pragma once
 
-#include "exception.h"
 #include "basic_types.h"
 #include "basic_defs.h"
-
+#include "x86/regname.h"
 #pragma pack(push, 1)
 
 typedef struct {

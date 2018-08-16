@@ -2,52 +2,66 @@
 
 .section .text
 
-
-/*
-  <iret stuff>
-  <error code>
-  <vector>
-  <pusha>
-*/
-
-.globl idt_common_asm
-
 .code64
-.type idt_common_asm, @function
-idt_common_asm:
+idt_common_asm_no_err:
+    .cfi_startproc
+    xor %ebx, %ebx
+idt_common_asm_with_err:
+    .irp r, cx, dx, bp, si, di
+     push %r\r
+     .endr
+     movzx %al, %eax
      ljmp *trampoline_64_32(%rip)
+     .cfi_endproc
 
 .code32
 .type exc32Entry, @function
 exc32Entry:
-     .irp r, eax, ebx, ecx, edx, ebp, esi, edi, esp
-     push %\r
-     .endr
+     .cfi_startproc
      cld
+     push %ebx
+     push %eax
+     sub $4, %esp
+     lea 68(%esp), %eax
+     mov %eax, (%esp)
      call idt_common
-     add $4, %esp
-     .irp r, edi, esi, ebp, edx, ecx, ebx, eax
-     pop %\r
-     .endr
-     add $16, %esp
+     add $12, %esp
      ljmp *trampoline_32_64
+     .cfi_endproc
 do_iret:
 .code64
+     .cfi_startproc
+     .irp r, di, si, bp, dx, cx, bx, ax
+     pop %r\r
+     .endr
+
      iretq
+     .cfi_endproc
 
 .macro gateStub vector
        .globl idt_entry_\vector
        idt_entry_\vector:
        .cfi_startproc
        .if \vector < 32
-           .if ((1u << \vector) & EXC_HAS_ERRCODE) == 0
-              push $0
+           .if ((1u << \vector) & EXC_HAS_ERRCODE) != 0
+              xchg (%rsp), %rbx
+           .else
+              push %rbx
            .endif
        .else
-           push $0
+           push %rbx
        .endif
-       push $\vector
-       jmp idt_common_asm
+       push %rax
+       mov $\vector, %al
+       .if \vector < 32
+           .if ((1u << \vector) & EXC_HAS_ERRCODE) != 0
+              jmp idt_common_asm_with_err
+           .else
+              jmp idt_common_asm_no_err
+           .endif
+       .else
+           jmp idt_common_asm_no_err
+       .endif
        .cfi_endproc
 .endm
 

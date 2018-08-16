@@ -1,14 +1,10 @@
-#include <stdint.h>
-#include "debug.h"
-#include "x86/dt.h"
 #include "i386/paging32.h"
-#include "x86/x86_defs.h"
-#include "kernel.h"
 #include "x86/msr.h"
 
 extern const Gate64 IDT[];
 
 static uint64 gdt[] = {
+    [0] = 0,
     [1] = DT_G | DT_L | DT_P | DT_DPL(0) |
           DT_TYPE(CS_NONCONFORMING_READABLE_NOTACCESSED) | DT_LIMIT(0xfffff),
     [2] = DT_G | DT_D | DT_P | DT_DPL(0) | DT_LIMIT(0xfffff) |
@@ -21,7 +17,7 @@ void
 load_gdt(void)
 {
     DTR32 addr;
-    DBG("");
+
     addr.limit = sizeof(gdt) - 1;
     addr.base = (uintptr_t)&gdt[0];
     SET_GDT32(addr);
@@ -51,6 +47,7 @@ __attribute__((noreturn)) void farjump_to_64(const Regs64 *regs)
     FarPtr32 fptr = {.cs = DT_KERN64_CODE_SEL, .ip = PTR_TO_PA(tramp64)};
     farjump_to_64_ctx = *regs;
     farjump_to_64_target = regs->rip;
+    DBG("");
     asm volatile(
         "lidt %0\n"
         "ljmp *%1\n"

@@ -1,6 +1,5 @@
 #include "debug.h"
 #include "kernel.h"
-#include "x86/exception.h"
 #include "x86/dt.h"
 #include "x86/x86_defs.h"
 #include "x86/msr.h"

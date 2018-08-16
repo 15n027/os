@@ -73,8 +73,7 @@ void kern_entry(uint32_t mbsig, multiboot_info_t *mbi)
         "popf\n"
         "into\n"
         "popf\n"
-            : : "g"(EFLAGS_OF | 2));
-
+        : : "g"(EFLAGS_OF));
     printf("survived interrupt\n");
     map_pages(PTR_TO_VA(mbi), PTR_TO_VA(mbi),
             PAGES_SPANNED(PTR_TO_VA(mbi), PTR_TO_VA(mbi) + sizeof *mbi), PT_P | PT_NX);
