@@ -46,7 +46,7 @@ INSTALLTARGET := $(INSTALL) $(TARGETDIR)
 CFLAGS := -Wall -std=gnu99 -mno-sse -mno-mmx -nostdlib -nostdinc -static \
 	-ffreestanding -fbuiltin \
 	-mindirect-branch=thunk \
-	-mindirect-branch-register -mgeneral-regs-only -mmitigate-rop
+	-mindirect-branch-register -mgeneral-regs-only
 CPPFLAGS := -I $(OBJDIRPREFIX)/include -D__JWOS__
 LDFLAGS := -L $(LIBDIR) -nostdlib -static $(LIBGCC)
 
