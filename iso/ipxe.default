@@ -1,4 +1,4 @@
 #!ipxe
 kernel kernel32.elf
-#module --name kernel64.mod kernel64.elf
+module --name kernel64.mod kernel64.elf
 boot

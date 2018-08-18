@@ -13,35 +13,33 @@ SECTIONS
         _start_kernel = .;
         .multiboot : {
              *(.multiboot)
-        }
+        } :text
         . = .;
         _stext = .;
         .text : {
               *(.text*)
               *(.gnu.linkonce.r.* .rodata .rodata*);
-        } :text
+        }
         IDTData : {
               *(IDT*);
-        } :text
+        }
         _etext = .;
         . = ALIGN(0x1000);
         _s_rw_area = .;
-        . = .;
-        .stack : {
-              . += 0x2000;
-              _stack_top = ABSOLUTE(.);
-        }
         _sdata = .;
         .data : {
               *(.data*)
               _edata = ABSOLUTE(.);
-        }
+        } :data
         . = ALIGN(64);
         . = .;
         _sbss = .;
         .bss : {
               *(.dynbss .bss .bss* COMMON .gnu.linkonce.b.*)
-              
+              . = ALIGN(64);
+              _stack0_bottom = ABSOLUTE(.);
+              . += 0x1000;
+              _stack0_top = ABSOLUTE(.);
         }
         _ebss = ABSOLUTE(.);
         _bss_size = SIZEOF(.bss);

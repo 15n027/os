@@ -9,6 +9,7 @@ extern void idt_init(void);
 static Tss64 tss0;
 
 static uint64 gdt[] ALIGNED(8) = {
+    [0] = 0,
     [1] = DT_G | DT_L | DT_P | DT_DPL(0) |
           DT_TYPE(CS_NONCONFORMING_READABLE_NOTACCESSED) | DT_LIMIT(0xfffff),
     [2] = DT_G | DT_D | DT_P | DT_DPL(0) | DT_LIMIT(0xfffff) |

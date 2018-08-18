@@ -11,19 +11,22 @@
 static bool x2;
 static uint8 *APIC;
 
+void ApicEOI(void)
+{
+    ApicWrite(APIC_EOI, 0);
+}
 
-inline void
+void
 ApicWrite(uint32 reg, uint64 val)
 {
     if (x2) {
         WRMSR(0x800 | (reg >> 4), val);
-        MFENCE();
     } else {
         MMIO_WRITE32((uint32*)(APIC + reg), val);
     }
 }
 
-inline uint64
+uint64
 ApicRead(uint32 reg)
 {
     uint64 val;
@@ -53,8 +56,7 @@ ApicIPI(uint32 apicId, uint32 flags)
 static bool
 handler_22(IretFrame *unused)
 {
-    //    printf("TICK\n");
-    ApicWrite(APIC_EOI, 0);
+    ApicEOI();
     return true;
 }
 
@@ -62,7 +64,7 @@ static bool
 handler_21(IretFrame *unused)
 {
     DBG("%s", __func__);
-    ApicWrite(APIC_EOI, 0x21);
+    ApicEOI();
     return true;
 }
 
@@ -90,7 +92,8 @@ init_apic(void)
     ApicWrite(APIC_SPURIOUS, 0x1ff);
 }
 
-uint32 MyApicId(void)
+uint32
+MyApicId(void)
 {
     uint32 id = ApicRead(APIC_ID);
     if (!x2) {

@@ -9,7 +9,6 @@
 #include <acpica/acpi.h>
 #include "acpi.h"
 #include "serial.h"
-#include "kern_sched.h"
 
 void cpu_init(void);
 void

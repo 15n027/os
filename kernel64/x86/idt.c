@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <inttypes.h>
@@ -7,7 +8,6 @@
 #include "kassert.h"
 #include "memmap.h"
 #include "interrupt.h"
-#include "kern_sched.h"
 #include "x86/exception.sinc"
 
 typedef struct interrupt_handler_list {

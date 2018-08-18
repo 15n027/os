@@ -2,12 +2,12 @@
 
 .globl _start
 .extern kern_entry
-.extern _stack_top
+.extern _stack0_top
 
 _start:
 .cfi_startproc
         cld
-        lea _stack_top, %esp
+        lea _stack0_top, %esp
         push %ebx
         push %eax
         mov $((1 << 16) | (1 << 4) | (1 << 0)), %eax
