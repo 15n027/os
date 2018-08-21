@@ -9,37 +9,23 @@ uint32 cpuToApic(uint32 cpu);
 void BootAP(uint32 apicId);
 
 typedef struct spinlock {
-    uint32 lock;
+    volatile uint32 lock;
 } spinlock;
 
-static inline bool spin_lock(spinlock *lck)
+static inline void spin_lock(spinlock *lck)
 {
-    uint32 val = MyApicId();
-    bool intsOn = INTERRUPTS_ENABLED();
-
+    uint32 val;
     do {
-        if (intsOn) {
-            ENABLE_INTERRUPTS();
-        }
-        ASSERT(Atomic_Read32(&lck->lock) != val);
-        while (Atomic_Read32(&lck->lock) != 0) {
-            PAUSE();
-        }
-        DISABLE_INTERRUPTS();
-        asm("xchg %0, %1"
-            : "+r"(val), "+m"(lck->lock)
-            :
-            : "memory");
-    }
-    while (val != 0);
-    return intsOn;
+        val = MyApicId() + 1;
+        asm("xchg %1, %0"
+            : "=m" (lck->lock),
+              "+r" (val));
+        PAUSE();
+    } while (val != 0);
 }
 
-static inline void spin_unlock(spinlock *lck, bool intsOn)
+static inline void spin_unlock(spinlock *lck)
 {
-    ASSERT(Atomic_Read32(&lck->lock) == MyApicId());
-    Atomic_Write32(&lck->lock, 0);
-    if (intsOn) {
-        ENABLE_INTERRUPTS();
-    }
+    ASSERT(Atomic_Read32((uint32*)&lck->lock) == MyApicId());
+    Atomic_Write32((uint32*)&lck->lock, 0);
 }

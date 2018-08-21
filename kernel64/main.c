@@ -9,6 +9,9 @@
 #include <acpica/acpi.h>
 #include "acpi.h"
 #include "serial.h"
+#include "smp/smp.h"
+
+void init_apic(void);
 
 void cpu_init(void);
 void
@@ -31,15 +34,7 @@ print_mmap(const multiboot_info_t *mbi)
     }
 }
 
-static unsigned console_lock;
-static void spin_lock(unsigned *lock)
-{
-    DISABLE_INTERRUPTS();
-}
-static void spin_unlock(unsigned *lock)
-{
-    ENABLE_INTERRUPTS();
-}
+static spinlock console_lock;
 
 
 void pic_init(void);
@@ -61,18 +56,12 @@ kern_entry(uint32 mbsig, multiboot_info_t *mbi)
         print_mmap(mbi);
         pmm_init_multiboot(mbi);
     }
-    DBG("");
     vmm_init();
-    DBG("");
-    void init_apic(void);
-    DBG("");
     init_apic();
-    DBG("");
     ENABLE_INTERRUPTS();
     InitAcpi();
-    DBG("");
     serial_lateinit();
-
+    //    BootAP(1);
     Log("ints on, hlt\n");
     ENABLE_INTERRUPTS();
     for(;;) {
