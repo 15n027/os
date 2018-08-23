@@ -53,6 +53,7 @@ idt_with_errcode:
        .cfi_endproc
 .endm
 
+.section IDTStubs, "ax", @progbits
 .irpc i, 0123456789abcdef
 .irpc j, 0123456789abcdef
       gateStub 0x\i\j

@@ -4,6 +4,7 @@
 
 .section .text
 _start:
+    .cfi_startproc
         lea (_stack0_top - 128)(%rip), %rsp
         sub $10, %rsp
         lea IDT(%rip), %rax
@@ -14,3 +15,4 @@ _start:
         cld
         call kern_entry
         ud2
+    .cfi_endproc

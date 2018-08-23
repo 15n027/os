@@ -43,10 +43,10 @@ INSTALLTARGET := $(INSTALL) $(TARGETDIR)
 
 #-ftrapv
 # -finstrument-functions
+RETPOLINE := -mindirect-branch=thunk -mindirect-branch-register
 CFLAGS := -Wall -std=gnu99 -mno-sse -mno-mmx -nostdlib -nostdinc -static \
-	-ffreestanding -fbuiltin \
-	-mindirect-branch=thunk \
-	-mindirect-branch-register -mgeneral-regs-only
+	-ffreestanding -fbuiltin -mgeneral-regs-only -fno-exceptions \
+	-ffunction-sections
 CPPFLAGS := -I $(OBJDIRPREFIX)/include -D__JWOS__
 LDFLAGS := -L $(LIBDIR) -nostdlib -static $(LIBGCC)
 

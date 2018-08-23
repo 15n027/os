@@ -18,26 +18,17 @@ SECTIONS
               *(.text*)
               _etext = ABSOLUTE(.);
               *(.gnu.linkonce.r.* .rodata .rodata*);
+              KEEP(*(IDTStubs));
         } :text
+        . = ALIGN(0x1000);
         IDTData : {
               *(IDTData);
         } :text
-        _sctors = .;
-        .ctors : {
-              KEEP(*(.ctors));
-              KEEP(*(.ctors.*));
-              KEEP(*(.init_array));
-              KEEP(*(.preinit_array))
-              _ectors = ABSOLUTE(.);
-        }
-        . = ALIGN(0x1000);
-        . = .;
         .data : {
               *(.data*)
               _edata = ABSOLUTE(.);
         } :data
 
-        . = ALIGN(256);
         _sbss = ABSOLUTE(.);
         .bss : {
               *(.dynbss .bss .bss* COMMON .gnu.linkonce.b.*)

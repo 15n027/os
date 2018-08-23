@@ -10,6 +10,7 @@
 #include "acpi.h"
 #include "serial.h"
 #include "smp/smp.h"
+#include "x86/cpuid.h"
 
 void init_apic(void);
 
@@ -47,8 +48,11 @@ kern_entry(uint32 mbsig, multiboot_info_t *mbi)
     // disable ps2 ports
     OUTB(0x64, 0xad);
     OUTB(0x64, 0xa7);
+
     earlyconsole_init();
     puts("made it to 64 bit mode woot");
+    printf("WRFSGSBASE: %d\n", cpuid_isset(FSGSBASE));
+    printf("has FSGS.Base MSR: %d\n", cpuid_isset(MSRFSGSBASE));
     pic_init();
     cpu_init();
     Log("mbsig=%x mbi=%p\n", mbsig, mbi);
