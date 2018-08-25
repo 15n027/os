@@ -15,10 +15,13 @@ SECTIONS
         _stext = .;
         . = .;
         .text : {
-              *(.text*)
+              *(.text*);
               _etext = ABSOLUTE(.);
               *(.gnu.linkonce.r.* .rodata .rodata*);
               KEEP(*(IDTStubs));
+        } :text
+        .eh_frame : {
+              *(.eh_frame);
         } :text
         . = ALIGN(0x1000);
         IDTData : {

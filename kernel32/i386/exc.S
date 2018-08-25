@@ -1,6 +1,7 @@
 #include "x86/exception.sinc"
 
 .section .text
+.cfi_sections .debug_frame
 
 .code64
 idt_common_asm_no_err:

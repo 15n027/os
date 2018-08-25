@@ -46,7 +46,7 @@ INSTALLTARGET := $(INSTALL) $(TARGETDIR)
 RETPOLINE := -mindirect-branch=thunk -mindirect-branch-register
 CFLAGS := -Wall -std=gnu99 -mno-sse -mno-mmx -nostdlib -nostdinc -static \
 	-ffreestanding -fbuiltin -mgeneral-regs-only -fno-exceptions \
-	-ffunction-sections
+	-fno-unwind-tables -fno-asynchronous-unwind-tables -ffunction-sections -fdata-sections
 CPPFLAGS := -I $(OBJDIRPREFIX)/include -D__JWOS__
 LDFLAGS := -L $(LIBDIR) -nostdlib -static $(LIBGCC)
 

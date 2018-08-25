@@ -1,3 +1,6 @@
+.code64
+.cfi_sections .debug_frame
+
 .extern kern_entry
 .globl _start
 .extern _stack0_top
