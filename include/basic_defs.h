@@ -41,3 +41,33 @@
 
 #define LIKELY(x)       __builtin_expect((x),1)
 #define UNLIKELY(x)     __builtin_expect((x),0)
+
+static inline unsigned
+lssb64(unsigned long long u)
+{
+    unsigned ret;
+    asm("bsf %1, %0\n"
+        "jnz 1f\n"
+        "xor %0, %0\n"
+        "not %0\n"
+        "1:\n"
+        : "=r" (ret)
+        : "g" (u)
+        : "cc");
+    return ret;
+}
+
+static inline unsigned
+lssb32(unsigned u)
+{
+    unsigned ret;
+    asm("bsf %1, %0\n"
+        "jnz 1f\n"
+        "xor %0, %0\n"
+        "not %0\n"
+        "1:\n"
+        : "=r" (ret)
+        : "g" (u)
+        : "cc");
+    return ret;
+}
