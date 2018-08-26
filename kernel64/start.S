@@ -1,3 +1,5 @@
+#include "x86/msrnum.sinc"
+
 .code64
 .cfi_sections .debug_frame
 
@@ -8,6 +10,12 @@
 .section .text
 _start:
     .cfi_startproc
+        xor %eax, %edx
+        xor %eax, %eax
+        mov $IA32_GS_BASE, %ecx
+        wrmsr
+        mov $IA32_FS_BASE, %ecx
+        wrmsr
         lea (_stack0_top - 128)(%rip), %rsp
         sub $10, %rsp
         lea IDT(%rip), %rax

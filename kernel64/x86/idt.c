@@ -54,8 +54,7 @@ idt_common(IretFrame *frame, uint32 vector, uint32 errCode)
     ASSERT(vector < ARRAYSIZE(handlers));
     if (vector == EXC_PF) {
         if (GET_CR2() <= 0x1000) {
-            DBG("null deref\n");
-            dump_frame(frame);
+            DBG("null deref 0x%lx\n", frame->rip);
             HALT();
         }
         handled = handle_pf(frame);

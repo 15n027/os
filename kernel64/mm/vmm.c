@@ -5,6 +5,10 @@
 #include "x86/x86_defs.h"
 #include "x86/paging.h"
 #include "kernel.h"
+#include "percpu.h"
+#include "katomic.h"
+
+static bool vmm_inited;
 
 static const va_range va_ranges[] = {
     [VM_AREA_OTHER] = {PT_IDX_TO_VA(384, 0, 0, 0), PT_IDX_TO_VA(385, 0, 0, 0)},
@@ -105,9 +109,11 @@ vmm_init(void)
     for (size_t i = 0; i < ARRAYSIZE(kern_vma.free); i++) {
         printf("[%016lx - %016lx]\n", kern_vma.free[i].start, kern_vma.free[i].end);
     }
+    vmm_inited = TRUE;
 }
 
-static void unmap_page_int(VA va)
+static void
+unmap_page_int(VA va)
 {
     PTE *pte;
     int lvl;
@@ -119,10 +125,12 @@ static void unmap_page_int(VA va)
             break;
         }
     }
-    *pte = 0;
+    //    DBG("*pte = %lx", *pte);
+    Atomic_Write64(pte, 0);
 }
 
-void unmap_pages(VA va, uint32 n)
+void
+unmap_pages(VA va, uint32 n)
 {
     for (uint32 i = 0; i < n; i++) {
         unmap_page_int(va);
@@ -130,40 +138,56 @@ void unmap_pages(VA va, uint32 n)
     invtlb();
 }
 
-void unmap_page(VA va)
+void
+unmap_page(VA va)
 {
     unmap_page_int(va);
     invpage((void*)va);
 }
 
 static void
+zero_physpage(PA pa)
+{
+    PerCpu *perCpu = GetPerCpu();
+    uint32 idx;
+    VA va;
+    //    DBG("percpu=%p start=%lx used=%x", perCpu, perCpu->scratchStart, perCpu->scratchUsed);
+    ASSERT(perCpu->scratchUsed < 512);
+    idx = Atomic_ReadInc32(&perCpu->scratchUsed);
+    va = perCpu->scratchStart + idx * PAGE_SIZE;
+    map_page(pa, va, PT_P | PT_RW);
+    memset((void*)va, 0, PAGE_SIZE);
+    unmap_page(va);
+    Atomic_ReadDec32(&perCpu->scratchUsed);
+}
+
+static void
 map_page_int(PA pa, VA va, uint64 flags)
 {
-    static uint8 scratch[PAGE_SIZE] ALIGNED(PAGE_SIZE);
     uint32 lvl;
     PTE *pte;
     uint64 off = 0;
-    //    DBG("scratch=%p", scratch);
+
     for (lvl = 4; lvl > 1; lvl--) {
-        off = off * 512 + PML_OFF(va, lvl);
+        off = (off << PAE_4LEVEL_INDEX_BITS) + PML_OFF(va, lvl);
         pte = &PML(lvl)[off];
         //        DBG("lvl %u pte=%08lx", lvl, *pte);
         if ((*pte & PT_P) == 0) {
             PA pa = alloc_phys_page();
-            ASSERT(va != (VA)scratch);
-            //            DBG("new pt page lvl %u pte=%p pa=%lx", lvl - 1, pte, pa);
-            map_page(pa, (VA)scratch, PT_RW | PT_NX);
-
-            memset(scratch, 0, PAGE_SIZE);
-            *pte = PT_ADDR_4K(pa) | PT_P | PT_RW;
-
-            invtlb();
+            if (LIKELY(vmm_inited)) {
+                zero_physpage(pa);
+                Atomic_Write64(pte, PT_ADDR_4K(pa) | PT_P | PT_RW);
+            } else {
+                uint64 nextOffset = (off << PAE_4LEVEL_INDEX_BITS) + PML_OFF(0, lvl - 1);
+                DBG("early mapping %lx -> %lx", pa, va);
+                Atomic_Write64(pte, PT_ADDR_4K(pa) | PT_P | PT_RW);
+                memset(&PML(lvl - 1)[nextOffset], 0, PAGE_SIZE);
+                invtlb();
+            }
         }
     }
-    PML1[off * 512 + PML1_OFF(va)] = PT_ADDR_4K(pa) | PT_P | flags;
-    if (va != (VA)scratch) {
-        unmap_page((VA)scratch);
-    }
+
+    Atomic_Write64(&PML1[off * 512 + PML1_OFF(va)], PT_ADDR_4K(pa) | (flags & PT_FLAGS));
 }
 
 void
@@ -190,15 +214,15 @@ handle_pf(IretFrame *unused)
     uint32 i;
     VA addr = GET_CR2();
     vma *vm = get_kern_vma();
-
+    //    HALT();
     if (addr >= va_ranges[VM_AREA_MGMT].start && addr < va_ranges[VM_AREA_MGMT].end) {
-    ASSERT(addr > 0xffff800000000000ull);
+        ASSERT(addr > 0xffff800000000000ull);
         size_t used_sz = vm->used_cnt * sizeof *vm->used;
         if (va_ranges[VM_AREA_MGMT].start + used_sz < addr) {
             return false;
         }
         pa = alloc_phys_page();
-        //        DBG("alloc mgmt page: va=%lx pa=%lx", addr, pa);
+        DBG("alloc mgmt page: va=%lx pa=%lx", addr, pa);
     } else {
         for (i = 0; i < vm->used_cnt; i++) {
             if (addr >= vm->used[i].start && addr < vm->used[i].end) {
@@ -211,6 +235,6 @@ handle_pf(IretFrame *unused)
     if (pa == INVALID_PA) {
         return false;
     }
-    map_page(pa, addr & ~PAGE_MASK, PT_RW | PT_NX);
+    map_page(pa, addr & ~PAGE_MASK, PT_RW | PT_NX | PT_P);
     return true;
 }

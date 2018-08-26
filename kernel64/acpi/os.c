@@ -162,7 +162,7 @@ AcpiOsMapMemory (
     ACPI_SIZE len = PAGES_SPANNED(Where, Where + Length);
     VA va = alloc_va_from(get_kern_vma(), VM_AREA_ACPI, len);
     ASSERT(va != 0);
-    map_pages(pa, va, len, PT_NX);
+    map_pages(pa, va, len, PT_NX | PT_P);
     //    printf("%s: %lx (%lx) -> %lx Length=0x%lx len=0x%lx\n", __func__, Where, pa, va, Length, len);
     va |= (Where & PAGE_MASK);
     return (void*)va;

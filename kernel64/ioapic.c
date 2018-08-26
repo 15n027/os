@@ -55,7 +55,7 @@ RegisterIOApic(PA addr, const IOApicPin pins[static IOAPIC_REDTBL_MAX])
     new = &ioApics[numIOApics - 1];
     map = (void*)alloc_va(get_kern_vma(), 1);
     PanicIf(!map, "IOAPIC failed to map");
-    map_page(addr, (VA)map, PT_RW | PT_NX);
+    map_page(addr, (VA)map, PT_RW | PT_NX | PT_P);
 
     new->IOREGSEL = (void*)map;
     new->IOWIN = (void*)(map + 0x10);

@@ -2,9 +2,13 @@
 #include "basic_types.h"
 #include "multiboot/multiboot.h"
 #include "interrupt.h"
+#include "x86/paging.h"
 
 typedef uint64 PFN;
 #define INVALID_PFN (0x8000000000000000ull)
+
+#define SCRATCH_START PT_IDX_TO_VA(280, 0, 0, 0)
+#define SCRATCH_PAGES 512
 
 void vmm_init(void);
 void vmm_earlyinit(void);

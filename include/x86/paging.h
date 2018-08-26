@@ -35,6 +35,9 @@
 #define PT_RW  (1ull << PT_RW_SHIFT)
 #define PT_P   (1ull << PT_P_SHIFT)
 
+#define PT_FLAGS (PT_NX | PT_G | PT_PS | PT_D | PT_A | PT_PCD | PT_PWT | \
+                  PT_US | PT_RW | PT_P)
+
 #define PT_ERR_P 1
 #define PT_ERR_W 2
 #define PT_ERR_U 4

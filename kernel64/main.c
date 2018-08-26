@@ -11,6 +11,7 @@
 #include "serial.h"
 #include "smp/smp.h"
 #include "x86/cpuid.h"
+#include "percpu.h"
 
 void init_apic(void);
 
@@ -60,6 +61,7 @@ kern_entry(uint32 mbsig, multiboot_info_t *mbi)
         print_mmap(mbi);
         pmm_init_multiboot(mbi);
     }
+    PerCpuInit(TRUE);
     vmm_init();
     init_apic();
     ENABLE_INTERRUPTS();

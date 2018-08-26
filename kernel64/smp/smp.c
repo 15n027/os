@@ -55,7 +55,7 @@ InitBootTrampoline(void)
     ASSERT_ON_COMPILE(offsetof(APBootInfo, flags) == BOOTAP_FLAGS_OFF - BOOTAP_DATA_OFF);
     ASSERT_ON_COMPILE(offsetof(APBootInfo, apStartFn) == BOOTAP_FUNC_OFF - BOOTAP_DATA_OFF);
     apTrampoline = alloc_aligned_phys_pages_in_range(0, 0x100000, 1, PAGE_SIZE);
-    map_page(apTrampoline, apTrampoline, PT_RW);
+    map_page(apTrampoline, apTrampoline, PT_RW | PT_P);
     PanicIf(apTrampoline == INVALID_PA, "Could not allocate AP trampoline low page");
     memcpy((void*)apTrampoline, APTrampolineCodeStart, APTrampolineCodeEnd - APTrampolineCodeStart);
 
@@ -100,7 +100,7 @@ void BootAP(uint32 apicId)
     bi->stack = (void*)(alloc_va(get_kern_vma(), 2) + 2 * PAGE_SIZE);
     stackPhys = alloc_phys_pages(2);
     ASSERT(stackPhys != INVALID_PA);
-    map_pages(stackPhys, (VA)bi->stack - 2 * PAGE_SIZE, 2, PT_NX | PT_RW);
+    map_pages(stackPhys, (VA)bi->stack - 2 * PAGE_SIZE, 2, PT_NX | PT_RW | PT_P);
     DBG("apicId=%x trampoline=%lx", apicId, apTrampoline);
     ApicIPI(apicId,
             APIC_IPI_DELMODE_INIT |
