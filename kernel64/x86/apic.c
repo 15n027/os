@@ -54,14 +54,15 @@ ApicIPI(uint32 apicId, uint32 flags)
 }
 
 static bool
-handler_22(IretFrame *unused)
+handler_22(IretFrame *unused, void *ctx)
 {
+    asm("" ::: "memory");
     ApicEOI();
     return true;
 }
 
 static bool
-handler_21(IretFrame *unused)
+handler_21(IretFrame *unused, void *ctx)
 {
     DBG("%s", __func__);
     ApicEOI();
@@ -73,8 +74,8 @@ init_apic(void)
 {
     VA apicBase = RDMSR(IA32_APIC_BASE);
 
-    install_handler(0x22, handler_22);
-    install_handler(0x21, handler_21);
+    install_handler(0x22, handler_22, NULL);
+    install_handler(0x21, handler_21, NULL);
     if (cpuid_isset(X2APIC)) {
         printf("X2APIC supported\n");
         apicBase |= 3 << 10;
@@ -90,6 +91,10 @@ init_apic(void)
     ApicWrite(APIC_INITIAL_COUNT, 0);
     DBG("APIC_LVT_TIMER=%016lx", ApicRead(APIC_LVT_TIMER));
     ApicWrite(APIC_SPURIOUS, 0x1ff);
+    for (unsigned i = APIC_LVT_TIMER; i <= APIC_LVT_ERR; i += 0x10) {
+        DBG("[%03x] %04lx", i, ApicRead(i));
+        ApicWrite(i, 1 << 16);
+    }
 }
 
 uint32

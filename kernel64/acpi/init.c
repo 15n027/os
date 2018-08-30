@@ -6,6 +6,7 @@
 #include "smp/smp.h"
 #include "x86/apic.h"
 #include "ioapic.h"
+#include "memmap.h"
 
 typedef struct {
     ACPI_MADT_LOCAL_APIC *apics;
@@ -148,6 +149,48 @@ InitCpuToApicMapping(const Madt *madt)
     }
 }
 
+static void
+ParseHpet(void)
+{
+    ACPI_TABLE_HPET *hpet;
+    PA addr;
+    ACPI_STATUS s;
+    uint64 *va;
+    s = AcpiGetTable(ACPI_SIG_HPET, 1, (ACPI_TABLE_HEADER**)&hpet);
+    ASSERT(ACPI_SUCCESS(s));
+    addr = hpet->Address.Address;
+    DBG("addr=%lx", addr);
+    map_page(addr, addr, PT_RW | PT_P);
+    va = (uint64*)addr;
+    DBG("va[2] = %lx", va[2]);
+
+    /* Set legacy routing and disable intrs.  For some reason with legacy routing off intrs still fire in qemu */
+    va[2] = 2;
+}
+
+static ACPI_STATUS
+AcpiGPEHandler(ACPI_HANDLE device, UINT32 gpeNum, void *ctx)
+{
+    DBG("");
+    return AE_OK;
+}
+
+static UINT32
+pwr_handler(void *ctx)
+{
+    ACPI_STATUS s;
+    UINT32 status;
+    s = AcpiGetEventStatus(ACPI_EVENT_POWER_BUTTON, &status);
+    ASSERT(ACPI_SUCCESS(s));
+    DBG("status = %x", status);
+    ASSERT(status & ACPI_EVENT_FLAG_ENABLED);
+    ASSERT(status & ACPI_EVENT_FLAG_HAS_HANDLER);
+    ASSERT(status & ACPI_EVENT_FLAG_SET);
+    AcpiClearEvent(ACPI_EVENT_POWER_BUTTON);
+    DBG("ctx=%p", ctx);
+    return 0;
+}
+
 bool
 InitAcpi(void)
 {
@@ -161,7 +204,26 @@ InitAcpi(void)
     s = AcpiEnableSubsystem(ACPI_FULL_INITIALIZATION);
     printf("s=%x\n", s);
     ASSERT(ACPI_SUCCESS(s));
+    s = AcpiUpdateAllGpes();
+    ASSERT(ACPI_SUCCESS(s));
+    s = AcpiInstallGpeHandler(NULL, 0, ACPI_GPE_LEVEL_TRIGGERED, AcpiGPEHandler, NULL);
+    ASSERT(ACPI_SUCCESS(s));
     s = AcpiInitializeObjects(ACPI_FULL_INITIALIZATION);
+    ASSERT(ACPI_SUCCESS(s));
+    s = AcpiEnable();
+    ASSERT(ACPI_SUCCESS(s));
+    //    s = AcpiEnterSleepStatePrep(2);
+    //ASSERT(ACPI_SUCCESS(s));
+    //AcpiEnterSleepState(5);
+
+    s = AcpiEnableEvent(ACPI_EVENT_POWER_BUTTON, 0);
+    ASSERT(ACPI_SUCCESS(s));
+    s = AcpiInstallFixedEventHandler(ACPI_EVENT_POWER_BUTTON, pwr_handler, NULL);
+    ASSERT(ACPI_SUCCESS(s));
+    //    s = AcpiEnableEvent(ACPI_EVENT_GLOBAL, 0);
+
+    ASSERT(ACPI_SUCCESS(s));
+    s = AcpiEnableEvent(ACPI_EVENT_SLEEP_BUTTON, 0);
     ASSERT(ACPI_SUCCESS(s));
     if (ParseMadt(&madt)) {
         InitCpuToApicMapping(&madt);
@@ -173,5 +235,6 @@ InitAcpi(void)
     } else {
         VERIFY(0);
     }
+    ParseHpet();
     return true;
 }

@@ -95,7 +95,7 @@ dealloc_va(vaspace *vs, VA va, size_t n)
     if (vs == NULL) {
         vs = &vaspace_root.val;
     }
-    DBG("dealloc %s 0x%lx n=%zu", vs->name, va, n);
+    //    DBG("dealloc %s 0x%lx n=%zu", vs->name, va, n);
     v = &vs->alloc;
     spin_lock(&vs->lock);
     do {
@@ -319,6 +319,7 @@ handle_pf(IretFrame *unused)
         return false;
     }
     pa = alloc_phys_page();
+    //    DBG("pa=%lx", pa);
     if (pa == INVALID_PA) {
         return false;
     }

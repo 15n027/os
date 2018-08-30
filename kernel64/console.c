@@ -9,11 +9,12 @@
 #include "debug.h"
 #include "x86/x86_defs.h"
 #include "serial.h"
-
+#include "smp/smp.h"
 
 static uint16_t *vga_txt_mem = (uint16_t*)0xb8000;
 static const int VGA_TXT_BUF_SIZE = 80 * 25 * 2;
 static int col, line;
+static spinlock console_lock;
 
 static size_t earlyconsole_write(int fd, const void *buf, size_t len);
 size_t (*console_write)(int fd, const void *buf, size_t len) = earlyconsole_write;
@@ -69,9 +70,10 @@ size_t
 __kernel_write(int fd, const void *buf, size_t len)
 {
     size_t ret;
-
+    spin_lock(&console_lock);
     debug_outs(buf, len);
     ret = console_write(fd, buf, len);
+    spin_unlock(&console_lock);
     return ret;
 }
 

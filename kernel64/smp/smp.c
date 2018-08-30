@@ -123,5 +123,9 @@ BootAP(uint32 apicId)
         PAUSE();
     }
     DBG("AP reports boot complete");
+    asm("sti");
+    for(;;) {
+        asm("hlt");
+    }
     HALT();
 }

@@ -9,6 +9,11 @@
 
 static vaspace *acpi_vaspace;
 
+typedef struct AcpiEventCtx {
+    ACPI_OSD_HANDLER fn;
+    void *ctx;
+} AcpiEventCtx;
+
 void AcpiOsPrintf(const char *fmt, ...)
 {
     va_list val;
@@ -42,6 +47,16 @@ ACPI_STATUS AcpiOsInitialize(void)
 ACPI_STATUS AcpiOsTerminate(void)
 {
     return AE_OK;
+}
+
+ACPI_STATUS
+AcpiOsEnterSleep (
+        UINT8                   SleepState,
+        UINT32                  RegaValue,
+        UINT32                  RegbValue)
+{
+
+    return (AE_OK);
 }
 
 ACPI_PHYSICAL_ADDRESS AcpiOsGetRootPointer(void)
@@ -302,9 +317,11 @@ AcpiOsWriteMemory (
 }
 
 static bool
-acpi_handler(IretFrame *frame)
+acpi_handler(IretFrame *frame, void *context)
 {
-    printf("%s\n", __func__);
+    AcpiEventCtx *ctx = context;
+    ctx->fn(ctx->ctx);
+    ApicEOI();
     return true;
 }
 
@@ -314,7 +331,13 @@ AcpiOsInstallInterruptHandler (
     ACPI_OSD_HANDLER        ServiceRoutine,
     void                    *Context)
 {
-    install_handler(InterruptNumber + 32, acpi_handler);
+    AcpiEventCtx *ctx = malloc(sizeof *ctx);
+    if (!ctx) {
+        return AE_NO_MEMORY;
+    }
+    ctx->fn = ServiceRoutine;
+    ctx->ctx = Context;
+    install_handler(InterruptNumber + 32, acpi_handler, ctx);
     printf("%s: %u %p %p\n", __func__, InterruptNumber, ServiceRoutine, Context);
     return AE_OK;
 }

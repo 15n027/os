@@ -13,10 +13,11 @@ DBG="-s -S"
 fi
 
 $QEMU \
+	-enable-kvm \
+    -smp 1 \
     -overcommit cpu-pm=on \
     -cpu max,+fsgsbase,+monitor \
-    -machine type=q35 \
-    -smp 2 \
+    -machine type=q35,kernel_irqchip=off \
     -m 8 \
     $CDROM \
     -vga std \

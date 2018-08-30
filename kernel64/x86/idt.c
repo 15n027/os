@@ -12,6 +12,7 @@
 
 typedef struct interrupt_handler_list {
     interrupt_handler fn;
+    void *ctx;
     struct interrupt_handler_list *next;
 } interrupt_handler_list;
 
@@ -19,14 +20,16 @@ typedef struct interrupt_handler_list {
 static interrupt_handler_list *handlers[256];
 
 bool
-install_handler(uint8 vector, interrupt_handler fn)
+install_handler(uint8 vector, interrupt_handler fn, void *ctx)
 {
-    interrupt_handler_list *newnode = malloc(sizeof *newnode);
+    interrupt_handler_list *newnode;
     interrupt_handler_list **list;
+    newnode = malloc(sizeof *newnode);
     if (!newnode) {
         return false;
     }
     newnode->fn = fn;
+    newnode->ctx = ctx;
     newnode->next = NULL;
     list = &handlers[vector];
     while (*list) {
@@ -56,8 +59,9 @@ idt_common(IretFrame *frame, uint32 vector, uint32 errCode)
         handled = handle_pf(frame);
     }
     handler = handlers[vector];
+    DBG("intr vector=%u", vector);
     while (handler) {
-        handled |= handler->fn(frame);
+        handled |= handler->fn(frame, handler->ctx);
         handler = handler->next;
     }
     if (!handled) {

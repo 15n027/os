@@ -50,12 +50,19 @@ kern_entry(uint32 mbsig, multiboot_info_t *mbi)
     // disable ps2 ports
     OUTB(0x64, 0xad);
     OUTB(0x64, 0xa7);
+    // disable PIT
+    OUTB(0x43, 0x30);
+    OUTB(0x40, 0);
+    OUTB(0x40, 0);
+
     earlyconsole_init();
     puts("made it to 64 bit mode woot");
     printf("WRFSGSBASE: %d\n", cpuid_isset(FSGSBASE));
     printf("has FSGS.Base MSR: %d\n", cpuid_isset(MSRFSGSBASE));
     DBG("WRMSR: %d", cpuid_isset(HASMSR));
     ASSERT(cpuid_isset(SSE3));
+    ASSERT(cpuid_isset(MWAIT));
+    DBG("IA32_MISC_ENABLE=%lx", RDMSR(IA32_MISC_ENABLE));
     WRMSR(IA32_MISC_ENABLE, RDMSR(IA32_MISC_ENABLE) | (1 << 18));
     printf("has mwait: %d\n", cpuid_isset(MWAIT));
     printf("IA32_MISC_ENABLE: 0x%016lx\n", RDMSR(IA32_MISC_ENABLE));
@@ -70,6 +77,7 @@ kern_entry(uint32 mbsig, multiboot_info_t *mbi)
     vmm_init();
     init_apic();
     ENABLE_INTERRUPTS();
+
     InitAcpi();
     serial_lateinit();
     //    BootAP(1);

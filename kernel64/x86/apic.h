@@ -105,6 +105,8 @@ void ApicWrite(uint32 reg, uint64 val);
 uint64 ApicRead(uint32 reg);
 void ApicIPI(uint32 apicId, uint32 flags);
 uint32 MyApicId(void);
+void ApicEOI(void);
+
 static inline bool IsBSP(void)
 {
     return MyApicId() == 0;

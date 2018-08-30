@@ -23,7 +23,7 @@ void serial_puts(uint32 com, const char *s)
 }
 
 static bool
-serial_input(IretFrame *unused)
+serial_input(IretFrame *unused, void *ctx)
 {
     extern size_t (*console_write)(int fd, const void *buf, size_t len);
 
@@ -64,7 +64,7 @@ bool serial_init(uint32 com)
 
 bool serial_lateinit(void)
 {
-    install_handler(36, serial_input);
+    install_handler(36, serial_input, NULL);
     OUTB(COM1_BASE + UART_IER, UART_IER_ERBFI);
     return true;
 }
