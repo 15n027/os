@@ -53,7 +53,7 @@ RegisterIOApic(PA addr, const IOApicPin pins[static IOAPIC_REDTBL_MAX])
     PanicIf(!io, "IOAPIC alloc fail");
     ioApics = io;
     new = &ioApics[numIOApics - 1];
-    map = (void*)alloc_va(get_kern_vma(), 1);
+    map = (void*)alloc_va(NULL, 1);
     PanicIf(!map, "IOAPIC failed to map");
     map_page(addr, (VA)map, PT_RW | PT_NX | PT_P);
 

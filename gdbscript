@@ -8,6 +8,6 @@ target remote :1234
 #hb gdt_init
 #hb vmm_init
 #hb idt.c:155
-hb idt_with_errcode
+#hb idt_with_errcode
 c
 

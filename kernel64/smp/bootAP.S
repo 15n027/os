@@ -50,6 +50,7 @@ APTrampolineEntry64:
     mov BOOTAP_FUNC_OFF(%rdi), %rsi
     lock
     or $2, BOOTAP_FLAGS_OFF(%rdi)
+    mfence
     jmp *%rsi
 
 APTrampolineCodeEnd:

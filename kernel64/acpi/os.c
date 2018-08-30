@@ -7,6 +7,8 @@
 #include "x86/paging.h"
 #include "interrupt.h"
 
+static vaspace *acpi_vaspace;
+
 void AcpiOsPrintf(const char *fmt, ...)
 {
     va_list val;
@@ -153,6 +155,13 @@ AcpiOsSignal (
     return AE_OK;
 }
 
+static void
+acpi_createvaspace(void)
+{
+    acpi_vaspace = vaspace_create(VASPACE_ACPI, 4ull * GB / PAGE_SIZE, "acpi");
+    VERIFY(acpi_vaspace != NULL);
+}
+
 void *
 AcpiOsMapMemory (
     ACPI_PHYSICAL_ADDRESS   Where,
@@ -160,22 +169,28 @@ AcpiOsMapMemory (
 {
     PA pa = ROUNDDOWN(Where, PAGE_SIZE);
     ACPI_SIZE len = PAGES_SPANNED(Where, Where + Length);
-    VA va = alloc_va_from(get_kern_vma(), VM_AREA_ACPI, len);
+    VA va;
+    if (acpi_vaspace == NULL) {
+        acpi_createvaspace();
+    }
+    va = alloc_va(acpi_vaspace, len);
+    //    DBG("OSMapMemory: %lx", va);
     ASSERT(va != 0);
     map_pages(pa, va, len, PT_NX | PT_P);
-    //    printf("%s: %lx (%lx) -> %lx Length=0x%lx len=0x%lx\n", __func__, Where, pa, va, Length, len);
     va |= (Where & PAGE_MASK);
     return (void*)va;
 }
+
 void
 AcpiOsUnmapMemory (
     void                    *LogicalAddress,
     ACPI_SIZE               Size)
 {
-    //    VA va = ROUNDDOWN((VA)LogicalAddress, PAGE_SIZE);
-    //  ACPI_SIZE len = PAGES_SPANNED((VA)LogicalAddress, (VA)LogicalAddress + Size);
+    VA va = ROUNDDOWN((VA)LogicalAddress, PAGE_SIZE);
+    ACPI_SIZE len = PAGES_SPANNED((VA)LogicalAddress, (VA)LogicalAddress + Size);
     // printf("%s: %p 0x%lx\n", __func__, LogicalAddress, Size);
-    //    unmap_pages(va, len);
+    unmap_pages(va, len);
+    dealloc_va(acpi_vaspace, va, len);
 }
 
 ACPI_STATUS

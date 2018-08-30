@@ -5,7 +5,7 @@ static inline unsigned
 Atomic_Read32(unsigned *var)
 {
     unsigned ret;
-    asm ("mov %1, %0"
+    asm ("movl %1, %0"
          : "=r" (ret)
          : "m" (*var));
     return ret;
@@ -14,7 +14,7 @@ Atomic_Read32(unsigned *var)
 static inline void
 Atomic_Write32(unsigned *var, unsigned val)
 {
-    asm ("mov %0, %1"
+    asm ("movl %1, %0"
          : "=m" (*var)
          : "ri" (val));
 }
@@ -42,10 +42,10 @@ Atomic_Read64(uint64 *var)
 static inline uint32
 Atomic_CMPXCHG(uint32 *var, uint32 old, uint32 new)
 {
-    asm ("lock; cmpxchg %1, %0\n"
+    asm ("lock; cmpxchgl %%edx, %1\n"
          : "+a" (old),
            "+m" (*var)
-         : "r" (new)
+         : "d" (new)
          : "cc", "memory");
     return old;
 }

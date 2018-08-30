@@ -26,7 +26,7 @@ idt_with_errcode:
     push %r\r
     .cfi_adjust_cfa_offset 8
     .endr
-    lea 0x40(%rsp), %rdi
+    lea 0x48(%rsp), %rdi
     movzx %al, %esi
     call idt_common
 

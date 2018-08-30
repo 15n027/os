@@ -46,15 +46,20 @@ static inline unsigned
 lssb64(unsigned long long u)
 {
     unsigned ret;
-    asm("bsf %1, %0\n"
+    asm("bsf %1, %q0\n"
         "jnz 1f\n"
-        "xor %0, %0\n"
-        "not %0\n"
+        "movl $64, %0\n"
         "1:\n"
         : "=r" (ret)
-        : "g" (u)
+        : "rm" (u)
         : "cc");
     return ret;
+}
+
+static inline unsigned
+lscb64(unsigned long long u)
+{
+    return lssb64(~u);
 }
 
 static inline unsigned
@@ -63,11 +68,16 @@ lssb32(unsigned u)
     unsigned ret;
     asm("bsf %1, %0\n"
         "jnz 1f\n"
-        "xor %0, %0\n"
-        "not %0\n"
+        "movl $64, %0\n"
         "1:\n"
         : "=r" (ret)
-        : "g" (u)
+        : "rm" (u)
         : "cc");
     return ret;
+}
+
+static inline unsigned
+lscb32(unsigned u)
+{
+    return lssb32(~u);
 }

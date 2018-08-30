@@ -13,7 +13,8 @@ static PA apTrampoline = INVALID_PA;
 extern const char APTrampolineCodeStart[], APTrampolineCodeEnd[];
 extern const char APTrampolineRealmodeBase[], APTrampolineEntry32[], APTrampolineEntry64[];
 
-uint32 cpuToApic(uint32 cpu)
+uint32
+cpuToApic(uint32 cpu)
 {
     return 0;
 }
@@ -34,7 +35,8 @@ typedef struct {
 static void
 APCStart(void)
 {
-    Log("Hello from AP!!\n");
+    for(;;) PAUSE();
+    Log("Hello from AP %u\n", MyApicId());
     HALT();
 }
 
@@ -54,7 +56,7 @@ InitBootTrampoline(void)
     ASSERT_ON_COMPILE(offsetof(APBootInfo, stack) == BOOTAP_STACK_OFF - BOOTAP_DATA_OFF);
     ASSERT_ON_COMPILE(offsetof(APBootInfo, flags) == BOOTAP_FLAGS_OFF - BOOTAP_DATA_OFF);
     ASSERT_ON_COMPILE(offsetof(APBootInfo, apStartFn) == BOOTAP_FUNC_OFF - BOOTAP_DATA_OFF);
-    apTrampoline = alloc_aligned_phys_pages_in_range(0, 0x100000, 1, PAGE_SIZE);
+    apTrampoline = alloc_aligned_phys_pages_in_range(0x8000, 0x100000, 1, PAGE_SIZE);
     map_page(apTrampoline, apTrampoline, PT_RW | PT_P);
     PanicIf(apTrampoline == INVALID_PA, "Could not allocate AP trampoline low page");
     memcpy((void*)apTrampoline, APTrampolineCodeStart, APTrampolineCodeEnd - APTrampolineCodeStart);
@@ -88,7 +90,8 @@ InitBootTrampoline(void)
     asm("xchgw %bx, %bx");
 }
 
-void BootAP(uint32 apicId)
+void
+BootAP(uint32 apicId)
 {
     APBootInfo *bi;
     PA stackPhys;
@@ -97,7 +100,7 @@ void BootAP(uint32 apicId)
         InitBootTrampoline();
     }
     bi = (void*)((uint8*)apTrampoline + BOOTAP_DATA_OFF);
-    bi->stack = (void*)(alloc_va(get_kern_vma(), 2) + 2 * PAGE_SIZE);
+    bi->stack = (void*)(alloc_va(NULL, 2) + 2 * PAGE_SIZE);
     stackPhys = alloc_phys_pages(2);
     ASSERT(stackPhys != INVALID_PA);
     map_pages(stackPhys, (VA)bi->stack - 2 * PAGE_SIZE, 2, PT_NX | PT_RW | PT_P);
@@ -112,11 +115,12 @@ void BootAP(uint32 apicId)
         ApicIPI(apicId,
                 APIC_IPI_DELMODE_SIPI |
                 APIC_IPI_DESTMODE_PHYSICAL |
-                APIC_IPI_DEST_APICID);
+                APIC_IPI_DEST_APICID | (apTrampoline / PAGE_SIZE));
     }
     DBG("");
     while ((bi->flags & 2) == 0) {
-        asm("hlt" ::: "memory");
+        //asm("hlt" ::: "memory");
+        PAUSE();
     }
     DBG("AP reports boot complete");
     HALT();

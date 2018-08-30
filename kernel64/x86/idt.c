@@ -53,10 +53,6 @@ idt_common(IretFrame *frame, uint32 vector, uint32 errCode)
     bool handled = false;
     ASSERT(vector < ARRAYSIZE(handlers));
     if (vector == EXC_PF) {
-        if (GET_CR2() <= 0x1000) {
-            DBG("null deref 0x%lx\n", frame->rip);
-            HALT();
-        }
         handled = handle_pf(frame);
     }
     handler = handlers[vector];
@@ -66,10 +62,10 @@ idt_common(IretFrame *frame, uint32 vector, uint32 errCode)
     }
     if (!handled) {
         if (vector == EXC_PF) {
-            printf("UNHANDLED #PF: err: 0x%x cr2: %lx cs:ip %"PRIx64":%#"PRIx64"\n",
+            printf("UNHANDLED #PF: err: 0x%x cr2: 0x%lx cs:ip %02"PRIx64":%#"PRIx64"\n",
                    errCode, GET_CR2(), frame->cs, frame->rip);
         } else if (vector != EXC_BP && vector != EXC_OF) {
-            printf("UNHANDLED INT/EXC: 0x%x err: 0x%x cs:ip %"PRIx64":%#"PRIx64"\n",
+            printf("UNHANDLED INT/EXC: 0x%x err: 0x%x cs:ip %02"PRIx64":%#"PRIx64"\n",
                    vector, errCode, frame->cs, frame->rip);
         }
         if ((frame->cs & 3) != 0) {

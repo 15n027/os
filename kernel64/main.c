@@ -12,6 +12,8 @@
 #include "smp/smp.h"
 #include "x86/cpuid.h"
 #include "percpu.h"
+#include "x86/msr.h"
+
 
 void init_apic(void);
 
@@ -40,7 +42,6 @@ static spinlock console_lock;
 
 
 void pic_init(void);
-
 volatile int x[2];
 
 void
@@ -49,11 +50,15 @@ kern_entry(uint32 mbsig, multiboot_info_t *mbi)
     // disable ps2 ports
     OUTB(0x64, 0xad);
     OUTB(0x64, 0xa7);
-
     earlyconsole_init();
     puts("made it to 64 bit mode woot");
     printf("WRFSGSBASE: %d\n", cpuid_isset(FSGSBASE));
     printf("has FSGS.Base MSR: %d\n", cpuid_isset(MSRFSGSBASE));
+    DBG("WRMSR: %d", cpuid_isset(HASMSR));
+    ASSERT(cpuid_isset(SSE3));
+    WRMSR(IA32_MISC_ENABLE, RDMSR(IA32_MISC_ENABLE) | (1 << 18));
+    printf("has mwait: %d\n", cpuid_isset(MWAIT));
+    printf("IA32_MISC_ENABLE: 0x%016lx\n", RDMSR(IA32_MISC_ENABLE));
     pic_init();
     cpu_init();
     Log("mbsig=%x mbi=%p\n", mbsig, mbi);

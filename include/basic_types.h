@@ -33,7 +33,7 @@ typedef uint64 VA64;
 #endif
 
 #define VA_TO_PTR(va) ((void*)(uintptr_t)(va))
-
+#define VA_TO_VPN(va) ((va) >> PAGE_SHIFT)
 #define TRUE true
 #define FALSE false
 

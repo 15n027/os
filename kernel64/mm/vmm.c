@@ -10,51 +10,150 @@
 
 static bool vmm_inited;
 
-static const va_range va_ranges[] = {
-    [VM_AREA_OTHER] = {PT_IDX_TO_VA(384, 0, 0, 0), PT_IDX_TO_VA(385, 0, 0, 0)},
-    [VM_AREA_HEAP] = {PT_IDX_TO_VA(260, 0, 0, 0), PT_IDX_TO_VA(261, 0, 0, 0)},
-    [VM_AREA_MGMT] = {PT_IDX_TO_VA(261, 0, 0, 0), PT_IDX_TO_VA(261, 0, 1, 0)},
-    [VM_AREA_USER] = {PT_IDX_TO_VA(0, 0, 0, 256), PT_IDX_TO_VA(128, 0, 0, 0)},
-    [VM_AREA_ACPI] = {PT_IDX_TO_VA(0, 511, 511, 0), PT_IDX_TO_VA(0, 511, 511, 511)},
+static vaspace_node vaspace_root = {
+    .val.baseVPN = VASPACE_KERN0,
+    .val.maxPages = GB / PAGE_SIZE,
+    .val.alloc.baseVPN = VASPACE_KERN0,
+    .val.alloc.prev = &vaspace_root.val.alloc,
+    .val.alloc.next = &vaspace_root.val.alloc,
 };
 
-static vma kern_vma;
-
-vma *
-get_kern_vma(void)
+vaspace *
+vaspace_find(VPN vpn)
 {
-    return &kern_vma;
+    vaspace_node *tree = &vaspace_root;
+    while (tree != NULL) {
+        if (vpn < tree->val.baseVPN) {
+            tree = tree->left;
+        } else if (vpn >= tree->val.baseVPN &&
+                   vpn <= tree->val.baseVPN + tree->val.maxPages) {
+            return &tree->val;
+        } else {
+            tree = tree->right;
+        }
+    }
+    return NULL;
+}
+
+void
+vaspace_register(vaspace_node *node, const char *name)
+{
+    vaspace_node *tree = &vaspace_root;
+    ASSERT(!vaspace_find(node->val.baseVPN));
+    ASSERT(!vaspace_find(node->val.baseVPN + node->val.maxPages * PAGE_SIZE));
+    strncpy(node->val.name, name, sizeof node->val.name);
+    node->val.name[sizeof node->val.name - 1] = 0;
+    while (tree != NULL) {
+        if (node->val.baseVPN < tree->val.baseVPN) {
+            if (tree->left == NULL) {
+                tree->left = node;
+                return;
+            } else {
+                tree = tree->left;
+            }
+        } else {
+            if (tree->right == NULL) {
+                tree->right = node;
+                return;
+            } else {
+                tree = tree->right;
+            }
+        }
+    }
+    NOT_REACHED();
+}
+
+vaspace *
+vaspace_create(VPN baseVPN, uint32 maxPages, const char *name)
+{
+    vaspace_node *vs;
+    ASSERT(IMPLIES(baseVPN != 0, !vaspace_find(baseVPN) &&
+                                 !vaspace_find(baseVPN + maxPages)));
+    ASSERT(maxPages > 0);
+    vs = malloc(sizeof *vs);
+    if (vs == NULL) {
+        return NULL;
+    }
+    memset(vs, 0, sizeof *vs);
+    vs->val.alloc.baseVPN = vs->val.baseVPN = baseVPN;
+    vs->val.alloc.prev = vs->val.alloc.next = &vs->val.alloc;
+    if (baseVPN == 0) {
+        DBG("attempt dynamic alloc vaspace");
+        NOT_REACHED();
+    }
+    vs->val.maxPages = maxPages;
+    vaspace_register(vs, name);
+    return &vs->val;
+}
+
+void
+dealloc_va(vaspace *vs, VA va, size_t n)
+{
+    vma *v;
+    VPN vpn = VA_TO_VPN(va);
+    ASSERT(n > 0);
+    if (vs == NULL) {
+        vs = &vaspace_root.val;
+    }
+    DBG("dealloc %s 0x%lx n=%zu", vs->name, va, n);
+    v = &vs->alloc;
+    spin_lock(&vs->lock);
+    do {
+        if (vpn >= v->baseVPN) {
+            if (vpn + n == v->baseVPN + v->pages) {
+                v->pages -= n;
+                if (v->pages == 0 && v != &vs->alloc) {
+                    v->prev->next = v->next;
+                    v->next->prev = v->prev;
+                    memset(v, 0, sizeof *v);
+                    free(v);
+                }
+            } else {
+                NOT_REACHED();
+            }
+        }
+        v = v->next;
+    } while (v != &vs->alloc);
+    spin_unlock(&vs->lock);
 }
 
 VA
-alloc_va_from(vma *vm, vm_area_type type, size_t n)
+alloc_va(vaspace *va, size_t n)
 {
-    VA ret;
-    va_range *r;
-    vma_range *u;
-    ASSERT(type >= 0 && type != VM_AREA_MGMT && type < VM_AREA_MAX);
-    if (vm->used_cnt + 1 >= (vm->free[VM_AREA_MGMT].end - vm->free[VM_AREA_MGMT].start) / sizeof *vm->used) {
-        printf("used_cnt=%u\n", vm->used_cnt);
-        printf("start=%lx end=%lx\n", vm->free[VM_AREA_MGMT].start, vm->free[VM_AREA_MGMT].start);
+    VA ret = 0;
+    vma *tail;
+    vma *node;
+
+    if (va == NULL) {
+        va = &vaspace_root.val;
     }
-    ASSERT(vm->used_cnt + 1 < (vm->free[VM_AREA_MGMT].end - vm->free[VM_AREA_MGMT].start) / sizeof *vm->used);
-    r = &vm->free[type];
-    if (r->end - r->start < n) {
-        return 0;
+    spin_lock(&va->lock);
+    tail = va->alloc.prev;
+    if (va->usedPages + n > va->maxPages) {
+        ret = 0;
+        ASSERT(0);
+        goto out;
     }
-    ret = r->start;
-    r->start += n * PAGE_SIZE;
-    u = &vm->used[vm->used_cnt];
-    vm->used_cnt++;
-    u->start = ret;
-    u->end = ret + n * PAGE_SIZE;
+    if (va->baseVPN + va->maxPages >= tail->baseVPN + n) {
+        va->usedPages += n;
+        ret = (tail->baseVPN + tail->pages) << PAGE_SHIFT;
+        tail->pages += n;
+        goto out;
+    }
+    for (node = &va->alloc; node != tail; node = node->next) {
+        if (node->baseVPN + node->pages + n < node->next->baseVPN) {
+            va->usedPages += n;
+            ret = (node->baseVPN + node->pages) << PAGE_SHIFT;
+            node->pages += n;
+            goto out;
+        }
+    }
+    ASSERT(0);
+
+out:
+    spin_unlock(&va->lock);
+    //    DBG("alloc_va: %s ret=%lx", va->name, ret);
     return ret;
-}
-
-VA
-alloc_va(vma *vm, size_t n)
-{
-    return alloc_va_from(vm, VM_AREA_OTHER, n);
 }
 
 PA
@@ -102,13 +201,6 @@ vmm_earlyinit(void)
 void
 vmm_init(void)
 {
-    memcpy(kern_vma.free, va_ranges, sizeof va_ranges);
-    kern_vma.used = (void*)va_ranges[VM_AREA_MGMT].start;
-    kern_vma.used_cnt = 0;
-    printf("VA ranges:\n");
-    for (size_t i = 0; i < ARRAYSIZE(kern_vma.free); i++) {
-        printf("[%016lx - %016lx]\n", kern_vma.free[i].start, kern_vma.free[i].end);
-    }
     vmm_inited = TRUE;
 }
 
@@ -130,12 +222,20 @@ unmap_page_int(VA va)
 }
 
 void
-unmap_pages(VA va, uint32 n)
+unmap_pages(VA va, unsigned n)
 {
-    for (uint32 i = 0; i < n; i++) {
-        unmap_page_int(va);
+    unsigned i;
+    //DBG("unmap: %lx - %lx", va, va * n * PAGE_SIZE);
+    if (n < 8) {
+        for (i = 0; i < n; i++) {
+            unmap_page(va + i * PAGE_SIZE);
+        }
+    } else {
+        for (i = 0; i < n; i++) {
+            unmap_page_int(va);
+        }
+        invtlb();
     }
-    invtlb();
 }
 
 void
@@ -168,6 +268,7 @@ map_page_int(PA pa, VA va, uint64 flags)
     PTE *pte;
     uint64 off = 0;
 
+    ASSERT(IMPLIES(va == 0, (flags & PT_P) == 0));
     for (lvl = 4; lvl > 1; lvl--) {
         off = (off << PAE_4LEVEL_INDEX_BITS) + PML_OFF(va, lvl);
         pte = &PML(lvl)[off];
@@ -210,28 +311,14 @@ map_page(PA pa, VA va, uint64 flags)
 bool
 handle_pf(IretFrame *unused)
 {
-    PA pa = INVALID_PA;
-    uint32 i;
+    PA pa;
     VA addr = GET_CR2();
-    vma *vm = get_kern_vma();
-    //    HALT();
-    if (addr >= va_ranges[VM_AREA_MGMT].start && addr < va_ranges[VM_AREA_MGMT].end) {
-        ASSERT(addr > 0xffff800000000000ull);
-        size_t used_sz = vm->used_cnt * sizeof *vm->used;
-        if (va_ranges[VM_AREA_MGMT].start + used_sz < addr) {
-            return false;
-        }
-        pa = alloc_phys_page();
-        DBG("alloc mgmt page: va=%lx pa=%lx", addr, pa);
-    } else {
-        for (i = 0; i < vm->used_cnt; i++) {
-            if (addr >= vm->used[i].start && addr < vm->used[i].end) {
-                ASSERT(addr > 0xffff800000000000ull);
-                pa = alloc_phys_page();
-                break;
-            }
-        }
+
+    if (addr < 0x4000) {
+        DBG("Zero page access");
+        return false;
     }
+    pa = alloc_phys_page();
     if (pa == INVALID_PA) {
         return false;
     }

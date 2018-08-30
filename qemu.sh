@@ -11,10 +11,11 @@ if [ -n "$1" ]; then
 DBG="-s -S"
 #DBG=
 fi
+
 $QEMU \
-    -machine q35 \
-    -enable-kvm \
-    -cpu host \
+    -overcommit cpu-pm=on \
+    -cpu max,+fsgsbase,+monitor \
+    -machine type=q35 \
     -smp 2 \
     -m 8 \
     $CDROM \

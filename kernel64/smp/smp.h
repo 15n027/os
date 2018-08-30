@@ -14,18 +14,14 @@ typedef struct spinlock {
 
 static inline void spin_lock(spinlock *lck)
 {
-    uint32 val;
-    do {
-        val = MyApicId() + 1;
-        asm("xchg %1, %0"
-            : "=m" (lck->lock),
-              "+r" (val));
+    uint32 lockVal = MyApicId() + 1;
+    while (Atomic_CMPXCHG((uint32*)&lck->lock, 0, lockVal) != 0) {
         PAUSE();
-    } while (val != 0);
+    }
 }
 
 static inline void spin_unlock(spinlock *lck)
 {
-    ASSERT(Atomic_Read32((uint32*)&lck->lock) == MyApicId());
+    ASSERT(Atomic_Read32((uint32*)&lck->lock) == MyApicId() + 1);
     Atomic_Write32((uint32*)&lck->lock, 0);
 }

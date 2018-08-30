@@ -80,7 +80,7 @@ init_apic(void)
         apicBase |= 3 << 10;
         x2 = true;
     } else {
-        APIC = (void*)alloc_va(get_kern_vma(), 1);
+        APIC = (void*)alloc_va(NULL, 1);
         printf("Using xAPIC at %p\n", APIC);
         map_page(apicBase & ~PAGE_MASK, (VA)APIC, PT_RW | PT_P | PT_NX);
         apicBase |= (1 << 11);
