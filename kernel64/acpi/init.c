@@ -157,6 +157,7 @@ ParseHpet(void)
     ACPI_STATUS s;
     uint64 *va;
     s = AcpiGetTable(ACPI_SIG_HPET, 1, (ACPI_TABLE_HEADER**)&hpet);
+    s = s;
     ASSERT(ACPI_SUCCESS(s));
     addr = hpet->Address.Address;
     DBG("addr=%lx", addr);
@@ -181,6 +182,7 @@ pwr_handler(void *ctx)
     ACPI_STATUS s;
     UINT32 status;
     s = AcpiGetEventStatus(ACPI_EVENT_POWER_BUTTON, &status);
+    s = s;
     ASSERT(ACPI_SUCCESS(s));
     DBG("status = %x", status);
     ASSERT(status & ACPI_EVENT_FLAG_ENABLED);

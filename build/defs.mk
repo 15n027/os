@@ -47,11 +47,13 @@ RETPOLINE := -mindirect-branch=thunk -mindirect-branch-register
 CFLAGS := -Wall -std=gnu99 -mno-sse -mno-mmx -nostdlib -nostdinc -static \
 	-ffreestanding -fbuiltin -mgeneral-regs-only -fno-exceptions \
 	-fno-unwind-tables -fno-asynchronous-unwind-tables -ffunction-sections -fdata-sections
-CPPFLAGS := -I $(OBJDIRPREFIX)/include -D__JWOS__
+GCCROOT := $(dir $(shell $(PFX)gcc -print-libgcc-file-name))
+CPPFLAGS := -ffreestanding -I $(OBJDIRPREFIX)/include -D__JWOS__ \
+	-I $(GCCROOT)/include
 LDFLAGS := -L $(LIBDIR) -nostdlib -static $(LIBGCC)
 
 ifeq ($(DEBUG), 0)
-CFLAGS += -fomit-frame-pointer -O2
+CFLAGS += -fomit-frame-pointer -Os
 else
 CFLAGS += -DINCLUDE_ASSERTS -fverbose-asm
 CFLAGS += -fno-omit-frame-pointer -O

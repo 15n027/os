@@ -24,5 +24,6 @@ PerCpuInit(bool isBSP)
     for (unsigned i = 0; i < 512; i++) {
         map_page(0, perCpu->scratchStart + PAGE_SIZE * i, 0);
     }
+    asm("" ::: "memory");
     WRMSR(IA32_GS_BASE, (uintptr_t)&pPerCpu);
 }

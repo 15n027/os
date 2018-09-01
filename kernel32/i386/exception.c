@@ -1,7 +1,7 @@
 #include "x86/x86_defs.h"
 #include "x86/exception.sinc"
 void
-idt_common(IretFrame *frame, uint32 vector, uint32 errCode)
+idt_common(IretFrame *frame, unsigned vector, unsigned errCode)
 {
     DBG("idt_common: frame=%p vector=0x%x errCode=0x%x", frame, vector, errCode);
     if (vector == EXC_BP || vector == EXC_OF) {

@@ -7,6 +7,7 @@
 #include "kernel.h"
 #include "percpu.h"
 #include "katomic.h"
+#include "x86/msr.h"
 
 static bool vmm_inited;
 
@@ -248,10 +249,13 @@ unmap_page(VA va)
 static void
 zero_physpage(PA pa)
 {
-    PerCpu *perCpu = GetPerCpu();
+    PerCpu *perCpu;
     uint32 idx;
     VA va;
-    //    DBG("percpu=%p start=%lx used=%x", perCpu, perCpu->scratchStart, perCpu->scratchUsed);
+    DBG("");
+    DBG("gsmsr: 0x%lx", RDMSR(IA32_GS_BASE));
+    fflush(0);
+    perCpu = GetPerCpu();
     ASSERT(perCpu->scratchUsed < 512);
     idx = Atomic_ReadInc32(&perCpu->scratchUsed);
     va = perCpu->scratchStart + idx * PAGE_SIZE;
@@ -275,7 +279,7 @@ map_page_int(PA pa, VA va, uint64 flags)
         //        DBG("lvl %u pte=%08lx", lvl, *pte);
         if ((*pte & PT_P) == 0) {
             PA pa = alloc_phys_page();
-            if (LIKELY(vmm_inited)) {
+            if (vmm_inited) {
                 zero_physpage(pa);
                 Atomic_Write64(pte, PT_ADDR_4K(pa) | PT_P | PT_RW);
             } else {

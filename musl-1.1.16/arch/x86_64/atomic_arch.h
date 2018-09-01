@@ -105,6 +105,7 @@ static inline void a_spin()
 #define a_crash a_crash
 static inline void a_crash()
 {
+    asm("ud2");
 	__asm__ __volatile__( "hlt" : : : "memory" );
 }
 
