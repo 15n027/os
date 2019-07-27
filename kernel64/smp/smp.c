@@ -122,10 +122,5 @@ BootAP(uint32 apicId)
         //asm("hlt" ::: "memory");
         PAUSE();
     }
-    DBG("AP reports boot complete");
-    asm("sti");
-    for(;;) {
-        asm("hlt");
-    }
-    HALT();
+    DBG("AP apic=%x reports boot complete", apicId);
 }
