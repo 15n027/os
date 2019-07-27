@@ -50,7 +50,7 @@ gdt_init(void)
     tss->base_32_63 = HIDWORD((VA)&tss0);
     tss->reserved = 0;
 
-    tss0.iopermBase = 0xffff;
+    tss0.iopermBase = sizeof tss0;
     tss0.rsp0 = (VA)_stack0_top;
     asm volatile(
             "lgdtq %0\n"
