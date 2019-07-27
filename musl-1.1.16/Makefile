@@ -15,7 +15,7 @@ $(OBJDIR)/config.mak: Makefile
 	@CC="$(CC)" \
 	CROSS_COMPILE="$(PFX)" \
 	ARCH=$(ARCH) \
-	CFLAGS="$(CFLAGS) -Wno-parentheses -Wno-missing-braces -Werror" \
+	CFLAGS="$(CFLAGS) -Wno-parentheses -Wno-missing-braces" \
 	./configure --target=$(ARCH)-elf --disable-shared --prefix=$(OBJDIRPREFIX)  \
 		--config-mak=$(OBJDIR)/config.mak > /dev/null
 
