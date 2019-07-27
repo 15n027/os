@@ -73,21 +73,25 @@ void
 init_apic(void)
 {
     VA apicBase = RDMSR(IA32_APIC_BASE);
+    bool newX2;
 
     install_handler(0x22, handler_22, NULL);
     install_handler(0x21, handler_21, NULL);
-    if (cpuid_isset(X2APIC)) {
+    if (0 && cpuid_isset(X2APIC)) {
         printf("X2APIC supported\n");
         apicBase |= 3 << 10;
-        x2 = true;
+        newX2 = true;
     } else {
         APIC = (void*)alloc_va(NULL, 1);
         printf("Using xAPIC at %p\n", APIC);
         map_page(apicBase & ~PAGE_MASK, (VA)APIC, PT_RW | PT_P | PT_NX);
         apicBase |= (1 << 11);
+        newX2 = false;
     }
-    printf("IA32_APIC_BASE=0x%016lx\n", apicBase);
+    printf("new IA32_APIC_BASE=%lx\n", (unsigned long)apicBase);
     WRMSR(IA32_APIC_BASE, apicBase);
+    asm("":::"memory");
+    x2 = newX2;
     ApicWrite(APIC_INITIAL_COUNT, 0);
     DBG("APIC_LVT_TIMER=%016lx", ApicRead(APIC_LVT_TIMER));
     ApicWrite(APIC_SPURIOUS, 0x1ff);
