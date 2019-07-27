@@ -21,6 +21,18 @@ typedef struct {
 } Madt;
 
 static bool
+ParseFadt(void)
+{
+    ACPI_STATUS s;
+    ACPI_TABLE_FADT *fadt;
+    s = AcpiGetTable(ACPI_SIG_FADT, 1, (ACPI_TABLE_HEADER**)&fadt);
+    ASSERT(ACPI_SUCCESS(s));
+    printf("gpe0block=%x gpe1block=%x gpe0len=%u gpe1len=%u\n",
+           fadt->Gpe0Block, fadt->Gpe1Block, fadt->Gpe0BlockLength, fadt->Gpe1BlockLength);
+    return true;
+}
+
+static bool
 ParseMadt(Madt *data)
 {
     ACPI_TABLE_MADT *apic;
@@ -169,7 +181,7 @@ ParseHpet(void)
     va[2] = 2;
 }
 
-static ACPI_STATUS
+static inline ACPI_STATUS
 AcpiGPEHandler(ACPI_HANDLE device, UINT32 gpeNum, void *ctx)
 {
     DBG("");
@@ -187,10 +199,11 @@ pwr_handler(void *ctx)
     DBG("status = %x", status);
     ASSERT(status & ACPI_EVENT_FLAG_ENABLED);
     ASSERT(status & ACPI_EVENT_FLAG_HAS_HANDLER);
-    ASSERT(status & ACPI_EVENT_FLAG_SET);
+    //    ASSERT(status & ACPI_EVENT_FLAG_SET);
     AcpiClearEvent(ACPI_EVENT_POWER_BUTTON);
     DBG("ctx=%p", ctx);
-    return 0;
+
+    return AE_OK;
 }
 
 bool
@@ -206,10 +219,6 @@ InitAcpi(void)
     s = AcpiEnableSubsystem(ACPI_FULL_INITIALIZATION);
     printf("s=%x\n", s);
     ASSERT(ACPI_SUCCESS(s));
-    s = AcpiUpdateAllGpes();
-    ASSERT(ACPI_SUCCESS(s));
-    s = AcpiInstallGpeHandler(NULL, 0, ACPI_GPE_LEVEL_TRIGGERED, AcpiGPEHandler, NULL);
-    ASSERT(ACPI_SUCCESS(s));
     s = AcpiInitializeObjects(ACPI_FULL_INITIALIZATION);
     ASSERT(ACPI_SUCCESS(s));
     s = AcpiEnable();
@@ -222,11 +231,13 @@ InitAcpi(void)
     ASSERT(ACPI_SUCCESS(s));
     s = AcpiInstallFixedEventHandler(ACPI_EVENT_POWER_BUTTON, pwr_handler, NULL);
     ASSERT(ACPI_SUCCESS(s));
-    //    s = AcpiEnableEvent(ACPI_EVENT_GLOBAL, 0);
+    s = AcpiEnableEvent(ACPI_EVENT_GLOBAL, 0);
 
     ASSERT(ACPI_SUCCESS(s));
     s = AcpiEnableEvent(ACPI_EVENT_SLEEP_BUTTON, 0);
     ASSERT(ACPI_SUCCESS(s));
+    if (ParseFadt()) {
+    }
     if (ParseMadt(&madt)) {
         InitCpuToApicMapping(&madt);
         InitIOApics(&madt);
