@@ -61,7 +61,6 @@ kern_entry(uint32 mbsig, multiboot_info_t *mbi)
     printf("has FSGS.Base MSR: %d\n", cpuid_isset(MSRFSGSBASE));
     DBG("WRMSR: %d", cpuid_isset(HASMSR));
     ASSERT(cpuid_isset(SSE3));
-    ASSERT(cpuid_isset(MWAIT));
     DBG("IA32_MISC_ENABLE=%lx", RDMSR(IA32_MISC_ENABLE));
     WRMSR(IA32_MISC_ENABLE, RDMSR(IA32_MISC_ENABLE) | (1 << 18));
     printf("has mwait: %d\n", cpuid_isset(MWAIT));
@@ -80,18 +79,15 @@ kern_entry(uint32 mbsig, multiboot_info_t *mbi)
 
     InitAcpi();
     serial_lateinit();
-    //    BootAP(1);
     Log("ints on, hlt\n");
-    ENABLE_INTERRUPTS();
+
     for(;;) {
         x[0]++;
-        continue;
         if (x[0] % 10240 == 0) {
-            spin_lock(&console_lock);
+            bool ints = spin_lock(&console_lock);
             Log("2 %08x %08x\r", x[0], x[1]);
-            spin_unlock(&console_lock);
+            spin_unlock(&console_lock, ints);
         }
     }
-    asm("int3\n");
     HALT();
 }

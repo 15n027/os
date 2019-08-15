@@ -9,7 +9,7 @@
 .type idt_common_asm, @function
 .extern idt_common
 
-idt_no_errcode:
+idt_entry:
     .cfi_startproc
     .cfi_def_cfa_offset 0
     .cfi_rel_offset rip, 0x8
@@ -17,7 +17,7 @@ idt_no_errcode:
     push %rdx
     .cfi_adjust_cfa_offset 8
 
-idt_with_errcode:
+.idt_with_errcode:
     cld
 
     // 5 (IretFrame) + ax, dx (2) + cx,di,si,8,9,10,11 (7) = 16
@@ -57,12 +57,12 @@ idt_with_errcode:
        mov $\vector, %al
        .if \vector < 32
            .if ((1u << \vector) & EXC_HAS_ERRCODE) != 0
-               jmp idt_with_errcode
+               jmp .idt_with_errcode
            .else
-              jmp idt_no_errcode
+              jmp idt_entry
            .endif
        .else
-           jmp idt_no_errcode
+           jmp idt_entry
        .endif
        .cfi_endproc
 .endm

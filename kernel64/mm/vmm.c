@@ -92,13 +92,14 @@ dealloc_va(vaspace *vs, VA va, size_t n)
 {
     vma *v;
     VPN vpn = VA_TO_VPN(va);
+    bool ints;
     ASSERT(n > 0);
     if (vs == NULL) {
         vs = &vaspace_root.val;
     }
     //    DBG("dealloc %s 0x%lx n=%zu", vs->name, va, n);
     v = &vs->alloc;
-    spin_lock(&vs->lock);
+    ints = spin_lock(&vs->lock);
     do {
         if (vpn >= v->baseVPN) {
             if (vpn + n == v->baseVPN + v->pages) {
@@ -115,7 +116,7 @@ dealloc_va(vaspace *vs, VA va, size_t n)
         }
         v = v->next;
     } while (v != &vs->alloc);
-    spin_unlock(&vs->lock);
+    spin_unlock(&vs->lock, ints);
 }
 
 VA
@@ -124,11 +125,12 @@ alloc_va(vaspace *va, size_t n)
     VA ret = 0;
     vma *tail;
     vma *node;
+    bool ints;
 
     if (va == NULL) {
         va = &vaspace_root.val;
     }
-    spin_lock(&va->lock);
+    ints = spin_lock(&va->lock);
     tail = va->alloc.prev;
     if (va->usedPages + n > va->maxPages) {
         ret = 0;
@@ -152,7 +154,7 @@ alloc_va(vaspace *va, size_t n)
     ASSERT(0);
 
 out:
-    spin_unlock(&va->lock);
+    spin_unlock(&va->lock, ints);
     //    DBG("alloc_va: %s ret=%lx", va->name, ret);
     return ret;
 }

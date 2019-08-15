@@ -70,10 +70,10 @@ size_t
 __kernel_write(int fd, const void *buf, size_t len)
 {
     size_t ret;
-    spin_lock(&console_lock);
+    bool ints = spin_lock(&console_lock);
     debug_outs(buf, len);
     ret = console_write(fd, buf, len);
-    spin_unlock(&console_lock);
+    spin_unlock(&console_lock, ints);
     return ret;
 }
 
