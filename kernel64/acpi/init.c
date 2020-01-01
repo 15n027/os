@@ -165,20 +165,22 @@ static void
 ParseHpet(void)
 {
     ACPI_TABLE_HPET *hpet;
-    PA addr;
-    ACPI_STATUS s;
-    uint64 *va;
-    s = AcpiGetTable(ACPI_SIG_HPET, 1, (ACPI_TABLE_HEADER**)&hpet);
-    s = s;
-    ASSERT(ACPI_SUCCESS(s));
-    addr = hpet->Address.Address;
-    DBG("addr=%lx", addr);
-    map_page(addr, addr, PT_RW | PT_P);
-    va = (uint64*)addr;
-    DBG("va[2] = %lx", va[2]);
+    ACPI_STATUS s = AcpiGetTable(ACPI_SIG_HPET, 1, (ACPI_TABLE_HEADER**)&hpet);
 
-    /* Set legacy routing and disable intrs.  For some reason with legacy routing off intrs still fire in qemu */
-    va[2] = 2;
+    if (!ACPI_SUCCESS(s)) {
+        ASSERT(s <= AE_CODE_ENV_MAX);
+        DBG("Unable to find ACPI HPET table: %s", AcpiGbl_ExceptionNames_Env[s & ~AE_CODE_ENVIRONMENTAL].Name);
+    } else {
+        PA addr = hpet->Address.Address;
+        uint64 *va;
+        DBG("HPET addr=%lx", addr);
+        map_page(addr, addr, PT_RW | PT_P);
+        va = (uint64*)addr;
+        DBG("va[2] = %lx", va[2]);
+
+        /* Set legacy routing and disable intrs.  For some reason with legacy routing off intrs still fire in qemu */
+        va[2] = 2;
+    }
 }
 
 static inline ACPI_STATUS
