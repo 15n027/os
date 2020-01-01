@@ -67,12 +67,6 @@ void kern_entry(uint32_t mbsig, multiboot_info_t *mbi)
     load_gdt();
     enter_mode_ia32e();
     asm volatile("int3");
-    asm("pushf\n"
-        "push %0\n"
-        "popf\n"
-        "into\n"
-        "popf\n"
-        : : "g"(EFLAGS_OF));
     printf("survived interrupt\n");
     map_pages(PTR_TO_VA(mbi), PTR_TO_VA(mbi),
             PAGES_SPANNED(PTR_TO_VA(mbi), PTR_TO_VA(mbi) + sizeof *mbi), PT_P | PT_NX);
