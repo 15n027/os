@@ -43,6 +43,18 @@ SECTIONS
               . += 8K;
               _stack0_top = ABSOLUTE(.);
               _stack0_size = ABSOLUTE(_stack0_top - _stack0_bottom);
+              _ist1_top = ABSOLUTE(.);
+              . += 4K;
+              _ist1_bottom = ABSOLUTE(.);
+              _ist2_top = ABSOLUTE(.);
+              . += 4K;
+              _ist2_bottom = ABSOLUTE(.);
+              _ist3_top = ABSOLUTE(.);
+              . += 4K;
+              _ist3_bottom = ABSOLUTE(.);
+              _ist4_top = ABSOLUTE(.);
+              . += 4K;
+              _ist4_bottom = ABSOLUTE(.);
               _ebss = ABSOLUTE(.);
         } :data
         _end_kernel= .;

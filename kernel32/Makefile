@@ -25,7 +25,7 @@ $(OBJDIR)/$(KERNEL).orig: $(OBJS) $(LDSCRIPT)
 	@$(LD) -o $@ $(OBJS) $(LDFLAGS) $(LDLIBS)
 
 $(OBJDIR)/$(KERNEL): $(OBJDIR)/$(KERNEL).orig $(TOPDIR)/build/buildIDT
-	$(TOPDIR)/build/buildIDT $< $<.idt
+	$(TOPDIR)/build/buildIDT $(ARCH) $< $<.idt
 	$(OBJCOPY) --update-section IDTData=$<.idt $< $@
 	grub-file --is-x86-multiboot $@
 

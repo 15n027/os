@@ -14,18 +14,37 @@ def getsyms(fname):
             ret[int(mtch.group(2), 16)] = int(mtch.group(1), 16)
     return ret
 
-def genentry(vector, syms):
+def genentry(arch, vector, syms):
     p_dpl_type = 0x80 | 0 | 0x0e
-    ist = 0
+    if arch == "i686":
+        ist = 0
+    elif vector == 2: # NMI
+        # NMI can hit on the first instruction of a syscall handler
+        # AMD didn't define syscall to set a proper kernel stack
+        ist = 1
+    elif vector == 3: #DB
+        # If a hardware breakpoint is set on a syscall instruction that
+        # is in a mov-ss interrupt shadow it will hit in the kernel
+        ist = 2
+    elif vector == 8: #DF
+        # #DF is probably just a stack overflow, last ditch effort to recover
+        ist = 3
+    elif vector == 18: #MC
+        # MC can hit on the first instruction of a syscall handler
+        # AMD didn't define syscall to set a proper kernel stack
+        ist = 4
+    else:
+        ist = 0
     kern_cs = 0x08
     sym = syms[vector]
     return struct.pack("<HHBBHII", sym & 0xffff, kern_cs, ist, p_dpl_type, (sym >> 16) & 0xffff, sym >> 32, 0)
 
 def main():
-    syms = getsyms(sys.argv[1])
-    idt = open(sys.argv[2], "w")
+    arch = sys.argv[1]
+    syms = getsyms(sys.argv[2])
+    idt = open(sys.argv[3], "w")
     for i in range(256):
-        idt.write(genentry(i, syms))
+        idt.write(genentry(arch, i, syms))
     idt.close()
     return 0
 

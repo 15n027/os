@@ -6,6 +6,8 @@
 
 extern void idt_init(void);
 
+extern const char _ist1_top[], _ist2_top[], _ist3_top[], _ist4_top[];
+
 static Tss64 tss0;
 
 static uint64 gdt[] ALIGNED(8) = {
@@ -39,6 +41,10 @@ gdt_init(void)
     gdtr.limit = sizeof(gdt) - 1;
     gdtr.base = PTR_TO_VA(&gdt[0]);
 
+    tss0.ist[0] = PTR_TO_VA(&_ist1_top);
+    tss0.ist[1] = PTR_TO_VA(&_ist2_top);
+    tss0.ist[2] = PTR_TO_VA(&_ist3_top);
+    tss0.ist[3] = PTR_TO_VA(&_ist4_top);
     ASSERT_ON_COMPILE(sizeof *tss == 16);
     tss = (TssGdtEntry*)&gdt[7];
     tss->limit_0_15 = sizeof(tss0) - 1;

@@ -28,7 +28,7 @@ $(OBJDIR)/$(KERNEL).orig: $(OBJS) $(LDSCRIPT)
 	$(LD) -o $@ $(OBJS) $(LDFLAGS) $(LDLIBS) -Map $(OBJDIR)/$(KERNEL).map --gc-sections
 
 $(OBJDIR)/$(KERNEL): $(OBJDIR)/$(KERNEL).orig $(TOPDIR)/build/buildIDT
-	$(TOPDIR)/build/buildIDT $< $<.idt
+	$(TOPDIR)/build/buildIDT $(ARCH) $< $<.idt
 	$(OBJCOPY) --update-section IDTData=$<.idt $< $@
 
 $(TARGETDIR)/$(KERNEL): $(OBJDIR)/$(KERNEL)
